@@ -1,0 +1,58 @@
+{
+    "model_name": "llama2",
+    "prompts": {
+        "cast member": "Name some actors who appeared in movies alongside %s.",
+        "member of": "Which organizations or groups is %s currently a part of? Which organizations or groups has %s been a part of in the past?",
+        "occupation": "What is the current occupation of %s? What occupations has %s had in the past?",
+        "country of citizenship": "Which country is %s currently a citizen of? Which countries has %s been a citizen of in the past?",
+        "educated at": "Where did %s receive their education?",
+        "ethnic group": "To which ethnic group does %s currently belong? Which ethnic groups has %s belonged to in the past?",
+        "narrative location": "In which locations does the narrative involving %s currently take place? In which locations did the narrative involving %s take place in the past?",
+        "diplomatic relation": "What diplomatic relations currently involve %s? What diplomatic relations have involved %s in the past?",
+        "cause of death": "How did %s die?",
+        "country": "Which country is %s currently associated with? Which countries has %s been associated with in the past?",
+        "genre": "What genre is currently associated with %s? What genres have been associated with %s in the past?",
+        "languages spoken, written, or signed": "Which languages does %s currently speak, write, or sign? Which languages has %s spoken, written, or signed in the past?",
+        "headquarters location": "Where are the headquarters of %s currently located? Where were the headquarters of %s located in the past?",
+        "place of birth": "Where was %s born?",
+        "instrument": "What instruments does %s currently play? What instruments has %s played in the past?",
+        "employer": "Who is the current employer of %s? Who have been the past employers of %s?",
+        "movement": "What movement is %s currently associated with? What movements has %s been associated with in the past?",
+        "record label": "Which record label is %s currently signed with? Which record labels has %s been signed with in the past?",
+        "country of origin": "What is the current country of origin of %s? What have been the countries of origin of %s in the past?",
+        "continent": "Which continent is %s currently located in? Which continents has %s been located in the past?",
+        "member of political party": "Which political party is %s currently a member of? Which political parties has %s been a member of in the past?",
+        "residence": "Where does %s currently reside? Where has %s resided in the past?",
+        "place of death": "Where did %s die?",
+        "influenced by": "Who or what has influenced %s?",
+        "place of burial": "Where is %s buried?",
+        "religion": "What is the current religion of %s? What religions has %s belonged to in the past?",
+        "sport": "Which sport does %s currently participate in? Which sports has %s participated in the past?",
+        "field of work": "What is the current field of work of %s? What have been the fields of work of %s in the past?",
+        "director": "Who directed movies featuring %s?",
+        "sibling": "Who are the siblings of %s?",
+        "child": "Who are the children of %s?",
+        "unmarried partner": "Who is the current unmarried partner of %s? Who are the past unmarried partners of %s?",
+        "medical condition": "What medical condition does %s currently have? What medical conditions did %s have in the past?",
+        "spouse": "Who is the current spouse of %s? Who are the past spouses of %s?",
+        "language of work or name": "What language does %s work or operate in?",
+        "official language": "What is the official language of %s?",
+        "founded by": "Who founded %s?",
+        "located in the administrative territorial entity": "In which administrative territorial entity is %s located?",
+        "parent organization": "What is the parent organization of %s?",
+        "part of": "What is %s a part of?",
+        "location of formation": "Where was %s formed?",
+        "time period": "During which time period did %s exist?",
+        "named after": "What is %s named after?",
+        "industry": "In which industry does %s work?",
+        "uses": "What does %s use?"
+    
+  },
+  
+  "system": {
+    "empty": "",
+    "light": "dasdad",
+    "full": "dasdasdfbsdhjvbfdshjkfgbnjksdbfjhsdfvhjsbhjfubs"
+  }
+  }
+  
