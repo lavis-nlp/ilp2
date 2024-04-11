@@ -1,22 +1,24 @@
-@function
-def question(s, question_1):
+from sglang import function, system, user, assistant, gen, set_default_backend, RuntimeEndpoint
+
+def __init__(self):
+    self.temp = 0
+    self.tokens = 256
+
+def prompt_model(s,system_prompt,question):
     s += system("[INST] [SYS]")
-    s += system("You are only able to answer naming the answers! \
-                Dont write a single sentence! \
-                Please give all answers! \
-                Dont elaborate! \
-                Never repeat the questions! \
-                Never respond in sentences! \
-                Dont bring new questions in context with old ones! \
-                Separate the answers using a comma.")
-                ##Answer in python string list format with the string elements being the answers!")
+    s += system(system_prompt)
     s += system("[/SYS]")
 
-    s += user(question_1)
+    s += question
 
-    s += assistant(gen("answer_1", max_tokens=256))
-
+    s += assistant(gen("answer"),max_tokens=tokens,temperature=temp)
     s += system("[/INST]")
 
-set_default_backend(RuntimeEndpoint("http://localhost:30000"))
+def set_temp(t):
+    temp = t
 
+def set_tokens(t):
+    tokens = t      
+
+def connect(port):
+    set_default_backend(RuntimeEndpoint("http://localhost:"+str(port)))  
