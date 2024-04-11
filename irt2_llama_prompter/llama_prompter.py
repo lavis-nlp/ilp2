@@ -1,10 +1,18 @@
 from sglang import function, system, user, assistant, gen, set_default_backend, RuntimeEndpoint
 
-def __init__(self):
-    self.temp = 0
-    self.tokens = 256
+temp = 0
+tokens = 256
+ready = False
 
-def prompt_model(s,system_prompt,question):
+def prompt_model(s_prompt,q_prompt):
+    state = question.run(
+        system_prompt=s_prompt,
+        question=q_prompt
+    )
+    answers = state["answer"]
+    return answers
+
+def question(s,system_prompt,question):
     s += system("[INST] [SYS]")
     s += system(system_prompt)
     s += system("[/SYS]")
@@ -21,4 +29,5 @@ def set_tokens(t):
     tokens = t      
 
 def connect(port):
-    set_default_backend(RuntimeEndpoint("http://localhost:"+str(port)))  
+    set_default_backend(RuntimeEndpoint("http://localhost:"+str(port)))
+    ready = True
