@@ -12,6 +12,11 @@ def prompt_model(s_prompt,q_prompt):
     answers = state["answer"]
     return answers
 
+def parse_answer(answers):
+    result = answers.split(",")
+    return result
+
+@function
 def question(s,system_prompt,question):
     s += system("[INST] [SYS]")
     s += system(system_prompt)
@@ -19,7 +24,7 @@ def question(s,system_prompt,question):
 
     s += question
 
-    s += assistant(gen("answer"),max_tokens=tokens,temperature=temp)
+    s += assistant(gen("answer",max_tokens=tokens,temperature=temp))
     s += system("[/INST]")
 
 def set_temp(t):
