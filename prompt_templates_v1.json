@@ -1,0 +1,69 @@
+{
+  "model_name": "llama2",
+  "tail": {
+    "cast member": "Name some actors who appeared in movies alongside {}.",
+    "member of": "Which organizations is or was {} a member of?",
+    "occupation": "What is {}'s current occupation or past occupations?",
+    "member of political party": "Which political party is or was {} a member of?",
+    "country of citizenship": "What country is or was {} a citizen of?",
+    "genre": "What genre does {} currently belong to or belonged to?",
+    "languages spoken, written, or signed": "What languages does {} speak, write, or sign?",
+    "instrument": "What instrument does {} currently play or has played in the past?",
+    "religion": "What is {}'s current religion or past religions?",
+    "cause of death": "What was the cause of {}'s death?",
+    "educated at": "Where did {} receive their education?",
+    "employer": "Who is {} currently employed by or has been employed by in the past?",
+    "record label": "What record labels is {} currently associated with or has been associated with in the past?",
+    "ethnic group": "To which ethnic group does {} currently belong to or belonged to in the past?",
+    "country of origin": "What is the country of origin of {}?",
+    "place of burial": "Where is {} buried?",
+    "influenced by": "Who has influenced {}’s work?",
+    "field of work": "What field does {} currently work in or has worked in the past?",
+    "place of birth": "Where was {} born?",
+    "place of death": "Where did {} die?",
+    "residence": "Where does {} currently reside or has resided in the past?",
+    "sport": "What sport is {} currently associated with or was associated with in the past?",
+    "spouse": "Who is {} currently married to or was married to in the past?",
+    "diplomatic relation": "What countries have diplomatic relations with {}?",
+    "narrative location": "Where does the narrative of {} take place?",
+    "time period": "During which time period was {} active?",
+    "child": "Who are the children of {}?",
+    "movement": "What movement is {} currently associated with or was associated with in the past?",
+    "sibling": "Who are the siblings of {}?",
+    "continent": "On which continent is {} currently located or was located in the past?",
+    "medical condition": "What medical condition does {} currently have or has had in the past?",
+    "director": "Who directed movies featuring {}?",
+    "unmarried partner": "Who are {}'s current unmarried partners or were {}'s unmarried partners in the past?",
+    "official language": "What are the current official languages of {}?",
+    "location of formation": "Where was {} formed?",
+    "part of": "What is {} a part of or was a part of in the past?",
+    "language of work or name": "What language does {} work or operate in?",
+    "named after": "Who or what is {} named after?",
+    "founded by": "Who founded {}?",
+    "parent organization": "What is the parent organization of {}?",
+    "industry": "In which industry does {} work?",
+    "uses": "What does {} use?"
+  },
+
+
+  "head":{
+    "cast member": "What movies has {} starred in as a cast member?",
+    "director": "Which movies has {} directed?",
+    "diplomatic relation": "With which countries does {} have diplomatic relations or had with?",
+    "influenced by": "Who’s work was influenced by {}?",
+    "sibling": "Who are {}’s siblings?",
+    "founded by": "What institution or entity was founded by {}?",
+    "part of": "Which countries are part of {}?",
+    "spouse": "Who is or was {}’s spouse?",
+    "unmarried partner": "Who are {}’s unmarried partners?",
+    "child": "Who is {}’s child?",
+    "named after": "Who or what is named after {}?"
+  },
+
+
+  "system": {
+    "empty": "",
+    "light": "dasdad",
+    "full": "dasdasdfbsdhjvbfdshjkfgbnjksdbfjhsdfvhjsbhjfubs"
+  }
+}
