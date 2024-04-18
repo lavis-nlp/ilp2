@@ -4,10 +4,9 @@ temp = 0
 tokens = 256
 ready = False
 
-def prompt_model(s_prompt,q_prompt):
+def prompt_model(prompt:str) -> str:
     state = question.run(
-        system_prompt=s_prompt,
-        question=q_prompt
+        prompt
     )
     answers = state["answer"]
     return answers
@@ -17,16 +16,11 @@ def parse_answer(answers):
     return result
 
 @function
-def question(s,system_prompt,question):
-    s += system("[INST] [SYS]")
-    s += system(system_prompt)
-    s += system("[/SYS]")
-
-    s += question
-
+def question(s,prompt:str):
+    s += prompt
     s += assistant(gen("answer",max_tokens=tokens,temperature=temp))
-    s += system("[/INST]")
-
+    
+    
 def set_temp(t):
     temp = t
 
