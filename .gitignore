@@ -1,4 +1,5 @@
-irt2_llama_prompter/__pycache__/
+irt2_llm_prompter/__pycache__/
 /irt2/
 /models/
+/results/
 /run_configurations/

@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "irt2-llama-prompter"
+name = "irt2-llm-prompter"
 version = "0.1.0"
 description = ""
 authors = ["Your Name <you@example.com>"]

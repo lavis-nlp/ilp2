@@ -1,4 +1,6 @@
 import json
+import csv
+import datetime
 from pathlib import Path
 
 import irt2
@@ -28,8 +30,7 @@ class run_config():
         prompt = self.system_prompt+' '+self.head_templates[relation].format(vertex)
         return prompt
     
-    def export(self,config_name:str):
-        path = Path('run_configurations')
+    def export(self,config_name:str,path:Path=Path('run_configurations')):
         if not path.exists():
             path.mkdir()
         json_path = path / config_name
@@ -42,12 +43,33 @@ class run_config():
         with open(json_path,'w') as json_file:
             json.dump(data,json_file,indent=4)
 
-        print('Run-Configuration nach \'run_configurations/{}\' exportiert'.format(config_name))
+        print('Run-Configuration nach \'{}/{}\' exportiert'.format(path,config_name))
 
     def info(self):
         s = "-"*20+"CONFIG"+"-"*20+"\n"
         s += str(self.tail_templates)
         print(s)
+
+    def run_test(self):
+        dir:Path = create_result_folder()
+        self.export('run_config',dir)
+
+
+def create_result_folder() -> Path:
+    path = Path('results')
+    if not path.exists():
+        path.mkdir()
+    formatted_date_time = datetime.datetime.now().strftime('%d-%m-%Y_%H-%M-%S')
+    folder_name = 'result_{}'.format(formatted_date_time)
+    dir_path = path / folder_name
+    i = 0
+    while dir_path.exists():
+        i += 1
+        formatted_date_time = datetime.datetime.now().strftime('%d-%m-%Y_%H-%M-%S')
+        folder_name = 'result_{}_({})'.format(formatted_date_time,i)
+        dir_path = path / folder_name
+    dir_path.mkdir()
+    return dir_path
 
 def create_config(prompt_templates_path:str,system_prompt_path:str,irt2_data_path:str) -> run_config:
     config_data = load_prompts(prompt_templates_path,system_prompt_path)
