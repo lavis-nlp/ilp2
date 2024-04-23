@@ -13,4 +13,7 @@ if ! [ -d "$MODEL_PATH" ]; then
 	exit 1
 fi
 
-python3 -m sglang.launch_server --model-path "$MODEL_PATH" --port 30000
+
+python3 -m sglang.launch_server --model-path "$MODEL_PATH" --port 30000 
+
+
