@@ -27,6 +27,6 @@ def set_temp(t):
 def set_tokens(t):
     tokens = t      
 
-def connect(port):
+def connect(port:int):
     set_default_backend(RuntimeEndpoint("http://localhost:"+str(port)))
     ready = True
