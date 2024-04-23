@@ -1,2 +1,4 @@
 irt2_llama_prompter/__pycache__/
 /irt2/
+/models/
+/run_configurations/
