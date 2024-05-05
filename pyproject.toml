@@ -6,10 +6,8 @@ authors = ["Your Name <you@example.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.9"
-irt2 = "^1.0.1"
-sglang = "^0.1.14"
-
+python = "^3.11"
+sglang = {version = "^0.1.14", extras = ["srt"]}
 
 [build-system]
 requires = ["poetry-core"]

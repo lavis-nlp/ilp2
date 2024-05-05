@@ -1,10 +1,14 @@
 import json
 from pathlib import Path
+from dataclasses import dataclass
 
+from irt2_llm_prompter.customErrors import (
+    MissingGenericException,
+    MissingTemplatesException,
+)
 
-# @dataclass
-# class RunConfig:
-class run_config:
+@dataclass
+class RunConfig:
     irt2_data_path: str
 
     tail_templates: dict
@@ -24,24 +28,30 @@ class run_config:
         self.head_templates = head_templates
         self.system_prompt = system_prompt
         self.irt2_data_path = irt2_data_path
-        # self.data = IRT2.from_dir(path=irt2_data_path)
 
     # Gibt fertigen tail-completion-prompt zurück
     def get_tail_prompt(self, mention: str, relation: str) -> str:
-        prompt = "{} {}".format(
-            self.system_prompt, self.tail_templates[relation].format(mention)
-        )
+        if relation not in self.tail_templates:
+            print('Used generic')
+            content = self.tail_templates["generic"].format(mention, relation)
+        else:
+            content = self.tail_templates[relation].format(mention)
+
+        prompt = "{} {}".format(self.system_prompt, content)
         return prompt
 
     # Gibt fertigen head-completion-prompt zurück
     def get_head_prompt(self, mention: str, relation: str) -> str:
-        prompt = "{} {}".format(
-            self.system_prompt, self.head_templates[relation].format(mention)
-        )
+        if relation not in self.head_templates:
+            print('Used generic')
+            content = self.head_templates["generic"].format(mention, relation)
+        else:
+            content = self.head_templates[relation].format(mention)
+        prompt = "{} {}".format(self.system_prompt, content)
         return prompt
 
     def export(self, config_name: str, path: Path = Path("run_configurations")):
-        """Speichert run_config mit Namen config_name im Ordner path, default: run_configurations."""
+        """Speichert RunConfig mit Namen config_name im Ordner path, default: run_configurations."""
         if not path.exists():
             path.mkdir()
         json_path = path / config_name
@@ -56,10 +66,10 @@ class run_config:
 
         print("Run-Configuration nach '{}/{}' exportiert".format(path, config_name))
 
-    # Gibt Infos zur run_config
+    # Gibt Infos zur RunConfig
     # TODO
     def __str__(self) -> str:
-        """Gibt Infos zur run_config."""
+        """Gibt Infos zur RunConfig."""
         s = "-" * 20 + "CONFIG" + "-" * 20 + "\n"
         s += "System-Prompt: {}\n\n Tail Prompt Templates: {}\n\n Head Prompt Templates: {}\n\n IRT2-Data: {}\n".format(
             self.system_prompt,
@@ -77,12 +87,14 @@ class run_config:
         prompt_templates_path: str,
         system_prompt_path: str,
         irt2_data_path: str,
-    ) -> "run_config":
+    ) -> "RunConfig":
+        """Erstellt RunConfig aus Pfaden"""
         templates = load_prompt_templates(prompt_templates_path)
         tail_templates = templates[0]
         head_templates = templates[1]
+        check_templates(tail_templates=tail_templates, head_templates=head_templates)
         system_prompt = load_system_prompt(system_prompt_path)
-        return run_config(
+        return RunConfig(
             tail_templates,
             head_templates,
             system_prompt,
@@ -90,11 +102,22 @@ class run_config:
         )
 
 
+def check_templates(tail_templates, head_templates):
+    """Überprüft prompt templates auf Vollständigkeit"""
+    if tail_templates is None:
+        raise MissingTemplatesException("Keine Tail Templates in Datei")
+    if "generic" not in tail_templates:
+        raise MissingGenericException("Keine Generic Template für Tail Completion")
+    if head_templates is None:
+        raise MissingTemplatesException("Keine Tail Templates in Datei")
+    if "generic" not in head_templates:
+        raise MissingGenericException("Keine Generic Template für Head Completion")
+
 
 # Importert run_config mit namen config_name as Ordner path
 def import_config(
     config_name: str, path: Path = Path("run_configurations")
-) -> run_config:
+) -> "RunConfig":
     if not path.exists:
         print("Kein Ordner, aus dem Importiert werden könnte!")
         return

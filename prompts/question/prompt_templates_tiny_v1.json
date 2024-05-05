@@ -4,9 +4,11 @@
     "country of citizenship": "What country is or was {} a citizen of?",
     "continent": "On which continent is {} currently located or was located in the past?",
     "languages spoken, written, or signed": "What languages does {} speak, write, or sign?",
-    "place of birth": "Where was {} born?"
+    "place of birth": "Where was {} born?",
+    "generic": "{}, {}"
     },
   "head":{
-    "place of birth": "Where was {} born?"
+    "place of birth": "Where was {} born?",
+    "generic": "{}, {}"
   }
 }
