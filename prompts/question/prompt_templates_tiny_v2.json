@@ -8,7 +8,7 @@
     "generic": "{}, {}"
     },
   "head":{
-    "place of birth": "Which famous people were born in {}?",
+    "place of birth": "Name twenty famous people who were born in {}?",
     "generic": "{}, {}"
   }
 }

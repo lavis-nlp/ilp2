@@ -87,7 +87,7 @@ class RunConfig:
         prompt_templates_path: str,
         system_prompt_path: str,
         irt2_data_path: str,
-    ) -> "RunConfig":
+    ) -> "RunConfig":   
         """Erstellt RunConfig aus Pfaden"""
         templates = load_prompt_templates(prompt_templates_path)
         tail_templates = templates[0]

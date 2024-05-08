@@ -1,45 +1,47 @@
-from sglang import function, system, user, assistant, gen, set_default_backend, RuntimeEndpoint
+from vllm import LLM, SamplingParams, RequestOutput
 
-# Parameter
+from vllm.distributed.parallel_state import destroy_model_parallel
+import gc
+import torch
 
-# Macht Modell deterministisch
-temp = 0
+from typing import List
+import json
 
-# Maximale Antwortlänge?
-tokens = 256
 
-# Checkt, ob connect ausgeführt wurde
-ready = False
+class Model:
+    model_path: str
+    tensor_parallel_size: int
+    params: SamplingParams
+    is_loaded: bool = False
 
-# Zum Prompten nutzen
-# Returnt 
-def prompt_model(prompt:str) -> str:
-    state = question.run(
-        prompt
-    )
-    answers = state["answer"]
-    return answers
+    llm: LLM
 
-# Parsed die Antwort
-#TODO
-def parse_answer(answers):
-    result = answers.split(",")
-    return result
+    def __init__(self, path: str, params: SamplingParams, tensor_parallel_size: int):
+        self.model_path = path
+        self.tensor_parallel_size = tensor_parallel_size
+        self.params = params
 
-# Schickt Prompt an Modell und generiert Antwort
-@function
-def question(s,prompt:str):
-    s += prompt
-    s += assistant(gen("answer",max_tokens=tokens,temperature=temp))
-    
-    
-def set_temp(t):
-    temp = t
+    def load_model(self):
+        """Läd model aus Objektconfig"""
+        self.llm = LLM(
+            model=self.model_path, tensor_parallel_size=self.tensor_parallel_size
+        )
+        self.is_loaded = True
 
-def set_tokens(t):
-    tokens = t      
+    def prompt_model(self, prompt: str = "", prompts: List = []) -> List[RequestOutput]:
+        """Promptet model mit prompt"""
+        if not self.is_loaded:
+            self.load_model()
 
-# Verbindet Prompter mit Sgl-Server
-def connect(port:int):
-    set_default_backend(RuntimeEndpoint("http://localhost:"+str(port)))
-    ready = True
+        if len(prompts) == 0:
+            prompts = [
+                prompt,
+            ]
+        result = self.llm.generate(prompts=prompts, sampling_params=self.params)
+        return result
+
+    def set_sampling_params(self, sampling_params: SamplingParams):
+        self.params = sampling_params
+
+    def parse_single_answer(result: List[RequestOutput]):
+        return result[0].outputs.text
