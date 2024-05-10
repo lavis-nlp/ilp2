@@ -5,7 +5,7 @@ from irt2_llm_prompter.model_prompter import Model
 from irt2_llm_prompter.sample_config import all_config
 
 from vllm import RequestOutput, SamplingParams
-from typing import List
+from typing import List, Literal
 
 import re
 import json
@@ -22,9 +22,24 @@ from pathlib import Path
 Tasks = dict[tuple[MID, RID], set[VID]]
 
 
+def run_on_val(
+    run_config: RunConfig,
+):
+    _run_benchmark(run_config=run_config, mode="validation")
+
+
+def run_on_test(
+    run_config: RunConfig,
+):
+    _run_benchmark(run_config=run_config, mode="test")
+
+
 # TODO
 # Test laufen lassen
-def run_test(run_config: RunConfig):
+def _run_benchmark(
+    run_config: RunConfig,
+    mode: Literal["validation", "test"],
+):
     """Testet Kombination aus RunConfig und Model und erstellt Evaluation"""
     # Erstellt Output-Ordner
     dir: Path = create_result_folder()
@@ -32,6 +47,8 @@ def run_test(run_config: RunConfig):
     run_config.export("RunConfig", dir)
     dataset = all_config["datasets"][run_config.data_type]
     data: IRT2 = IRT2.from_dir(path=dataset["path"])
+
+    print(run_config)
 
     sampling_params = sampling_params = SamplingParams(
         temperature=0,
@@ -52,23 +69,40 @@ def run_test(run_config: RunConfig):
     seed = dataset["seed"]
     data = data.tasks_subsample_kgc(percentage=percentage, seed=seed)
 
-    # print(data.open_kgc_val_tails)
-
-    tail_predictions = create_Predictions(
-        tasks=data.open_kgc_val_tails,
-        ds=data,
-        prompt_templates=run_config.tail_templates,
-        system_prompt=run_config.system_prompt,
-        model=model,
-    )
-
-    head_predictions = create_Predictions(
-        tasks=data.open_kgc_val_heads,
-        ds=data,
-        prompt_templates=run_config.head_templates,
-        system_prompt=run_config.system_prompt,
-        model=model,
-    )
+    if mode == "validation":
+        tail_predictions = create_Predictions(
+            tasks=data.open_kgc_val_tails,
+            splits=(Split.train, Split.valid),
+            ds=data,
+            prompt_templates=run_config.tail_templates,
+            system_prompt=run_config.system_prompt,
+            model=model,
+        )
+        head_predictions = create_Predictions(
+            tasks=data.open_kgc_val_heads,
+            splits=(Split.train, Split.valid),
+            ds=data,
+            prompt_templates=run_config.head_templates,
+            system_prompt=run_config.system_prompt,
+            model=model,
+        )
+    else:
+        tail_predictions = create_Predictions(
+            tasks=data.open_kgc_test_tails,
+            splits=(Split.train, Split.valid, Split.test),
+            ds=data,
+            prompt_templates=run_config.tail_templates,
+            system_prompt=run_config.system_prompt,
+            model=model,
+        )
+        head_predictions = create_Predictions(
+            tasks=data.open_kgc_test_heads,
+            splits=(Split.train, Split.valid, Split.test),
+            ds=data,
+            prompt_templates=run_config.head_templates,
+            system_prompt=run_config.system_prompt,
+            model=model,
+        )
 
     result = dict()
     result["tail_predictions"] = tail_predictions
@@ -77,7 +111,7 @@ def run_test(run_config: RunConfig):
     evaluation = evaluate(
         ds=data,
         task="kgc",
-        split="validation",
+        split=mode,
         head_predictions=head_predictions,
         tail_predictions=tail_predictions,
     )
@@ -90,7 +124,9 @@ def run_test(run_config: RunConfig):
         pickle.dump(result, file)
 
 
-def parseAnswer(model_response: List[RequestOutput]):
+def parseAnswer(
+    model_response: List[RequestOutput],
+):
     """Parsed Model-Output zu Antwortliste"""
     # Extrahiert Text aus Output, stript ihn
     result = model_response[0].outputs[0].text.strip()
@@ -103,10 +139,14 @@ def parseAnswer(model_response: List[RequestOutput]):
 
 
 def create_Predictions(
-    tasks: Tasks, ds: IRT2, system_prompt: str, prompt_templates: dict, model: Model
+    tasks: Tasks,
+    splits: tuple,
+    ds: IRT2,
+    system_prompt: str,
+    prompt_templates: dict,
+    model: Model,
 ) -> list:
     """Erstellt prediction Objekt für evaluation-Methode"""
-    splits = (Split.train, Split.valid)
     ids = ds.idmap
 
     predictions = []
@@ -114,87 +154,78 @@ def create_Predictions(
     for (mid, rid), gt_vids in tasks.items():
         mention = ds.mentions[mid]
         relation = ds.relations[rid].split(":")[1]
-        prompt = build_prompt(
-            system_prompt=system_prompt,
+        prompt_body = build_prompt_body(
             templates=prompt_templates,
             mention=mention,
             relation=relation,
         )
-        # print("-" * 20)
-        # print("Prompt: ", prompt)
+        prompt = "{} {}".format(system_prompt, prompt_body)
+        print("-" * 20, "\n")
+        print("Task: {}, {} -> {}\n".format(mention, relation, prompt_body))
 
         response = model.prompt_model(prompt=prompt)
 
         if response[0].outputs[0].text:
-            # print("Antwort: ", response[0].outputs[0].text)
+            print("Antwort: ", response[0].outputs[0].text, "\n")
 
             mentions = set(s.strip().lower() for s in parseAnswer(response))
 
-            # print("Extrakt: ", mentions)
+            print("Extrakt: ", mentions, "\n")
 
             pr_vids = ds.find_by_mention(
                 *mentions,
                 splits=splits,
             )
 
-            # print("Model-VIDs: ", ((mid, rid), [(vid, 1) for vid in pr_vids]))
+            print("Gefundene Mentions: ", ((mid, rid), [(vid, 1) for vid in pr_vids]))
 
-            # print_ground_truth(mid, rid, gt_vids, ds)
+            check_ground_truth(
+                mid=mid,
+                rid=rid,
+                gt_vids=gt_vids,
+                pr_vids=pr_vids,
+                ds=ds,
+            )
         else:
             pr_vids = set()
+            print("Leere Antwort!")
 
         predictions.append(((mid, rid), [(vid, 1) for vid in pr_vids]))
 
-    # print(predictions)
     return predictions
 
 
-def print_ground_truth(mid, rid, gt_vids, ds: IRT2):
+def check_ground_truth(
+    mid,
+    rid,
+    gt_vids,
+    pr_vids,
+    ds: IRT2,
+):
     """Logging Funktion, True Vids und True Mentions"""
-    print("True vids: ", (mid, rid), end="")
-    for vertex in ((vid, 1) for vid in gt_vids):
-        print(vertex, end=", ")
-    print("")
     print("True vids: (" + ds.mentions[mid] + "," + ds.relations[rid] + ") -> ", end="")
     for vertex in (ds.vertices[vid] for vid in gt_vids):
         print(vertex, end=", ")
     print("")
-    ids = ds.idmap
-    splits = (Split.train, Split.valid)
-    mentions = {
-        ids.mid2str[mid] for mids in map(ids.vid2mids.get, gt_vids) for mid in mids
-    }
 
-    pr_vids = ds.find_by_mention(
-        *mentions,
-        splits=splits,
-    )
-
-    print("True mentions: ", (mid, rid), end="")
-    for vertex in ((vid, 1) for vid in pr_vids):
-        print(vertex, end=", ")
-    print("")
-    print(
-        "True mentions: (" + ds.mentions[mid] + "," + ds.relations[rid] + ") -> ",
-        end="",
-    )
-    for vertex in (ds.vertices[vid] for vid in pr_vids):
-        print(vertex, end=", ")
-    print("")
+    n: int = 0
+    for vid in gt_vids:
+        if vid in pr_vids:
+            n += 1
+    print("{}/{}\n".format(n, len(gt_vids)))
 
 
-def build_prompt(
-    system_prompt: str, templates: dict, mention: str, relation: str
+def build_prompt_body(
+    templates: dict,
+    mention: str,
+    relation: str,
 ) -> str:
-    """Baut Prompt zusammen"""
+    """Baut Prompt-Body zusammen"""
     if relation not in templates:
         # print("Used generic")
-        content = templates["generic"].format(mention, relation)
+        return templates["generic"].format(mention, relation)
     else:
-        content = templates[relation].format(mention)
-
-    prompt = "{} {}".format(system_prompt, content)
-    return prompt
+        return templates[relation].format(mention)
 
 
 # Ordner für Testergebnisse anlegen, Pfad zurückgeben

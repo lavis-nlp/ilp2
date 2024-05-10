@@ -80,7 +80,6 @@ class RunConfig:
     # TODO
     def __str__(self) -> str:
         """Gibt Infos zur RunConfig."""
-        s = "-" * 20 + "CONFIG" + "-" * 20 + "\n"
         s += "System-Prompt: {}\n\n Tail Prompt Templates: {}\n\n Head Prompt Templates: {}\n\n Data: {}\n\n Model-Path: {}\n\n Tensor-Parallel-Size: {}\n".format(
             self.system_prompt,
             self.tail_templates,
@@ -89,7 +88,6 @@ class RunConfig:
             self.model_path,
             self.tensor_parallel_size
         )
-        s += "-" * 46
         return s
 
     # Config erstellen aus Daten

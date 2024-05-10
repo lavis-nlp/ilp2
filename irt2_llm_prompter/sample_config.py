@@ -1,7 +1,5 @@
 import irt2
 p_data = irt2.ENV.DIR.DATA
-def p():
-    print(p_data)
 
 all_config = {
     'datasets': {
