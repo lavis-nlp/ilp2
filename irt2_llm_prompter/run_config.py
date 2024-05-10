@@ -7,13 +7,17 @@ from irt2_llm_prompter.customErrors import (
     MissingTemplatesException,
 )
 
+
 @dataclass
 class RunConfig:
-    irt2_data_path: str
+    data_type: str
 
     tail_templates: dict
     head_templates: dict
     system_prompt: str
+
+    model_path: str
+    tensor_parallel_size: int
 
     # data:irt2.dataset.IRT2
 
@@ -22,17 +26,21 @@ class RunConfig:
         tail_templates: dict,
         head_templates: dict,
         system_prompt: str,
-        irt2_data_path: str,
+        data_type: str,
+        model_path: str,
+        tensor_parallel_size: int,
     ):
         self.tail_templates = tail_templates
         self.head_templates = head_templates
         self.system_prompt = system_prompt
-        self.irt2_data_path = irt2_data_path
+        self.data_type = data_type
+        self.model_path = model_path
+        self.tensor_parallel_size = tensor_parallel_size
 
     # Gibt fertigen tail-completion-prompt zurück
     def get_tail_prompt(self, mention: str, relation: str) -> str:
         if relation not in self.tail_templates:
-            print('Used generic')
+            print("Used generic")
             content = self.tail_templates["generic"].format(mention, relation)
         else:
             content = self.tail_templates[relation].format(mention)
@@ -43,7 +51,7 @@ class RunConfig:
     # Gibt fertigen head-completion-prompt zurück
     def get_head_prompt(self, mention: str, relation: str) -> str:
         if relation not in self.head_templates:
-            print('Used generic')
+            print("Used generic")
             content = self.head_templates["generic"].format(mention, relation)
         else:
             content = self.head_templates[relation].format(mention)
@@ -59,7 +67,9 @@ class RunConfig:
             "tail_prompt_templates": self.tail_templates,
             "head_prompt_templates": self.head_templates,
             "system_prompt": self.system_prompt,
-            "irt2_data_path": self.irt2_data_path,
+            "data_type": self.data_type,
+            "model_path": self.model_path,
+            "tensor_parallel_size": self.tensor_parallel_size,
         }
         with open(json_path, "w") as json_file:
             json.dump(data, json_file, indent=4)
@@ -71,11 +81,13 @@ class RunConfig:
     def __str__(self) -> str:
         """Gibt Infos zur RunConfig."""
         s = "-" * 20 + "CONFIG" + "-" * 20 + "\n"
-        s += "System-Prompt: {}\n\n Tail Prompt Templates: {}\n\n Head Prompt Templates: {}\n\n IRT2-Data: {}\n".format(
+        s += "System-Prompt: {}\n\n Tail Prompt Templates: {}\n\n Head Prompt Templates: {}\n\n Data: {}\n\n Model-Path: {}\n\n Tensor-Parallel-Size: {}\n".format(
             self.system_prompt,
             self.tail_templates,
             self.head_templates,
-            self.irt2_data_path,
+            self.data_type,
+            self.model_path,
+            self.tensor_parallel_size
         )
         s += "-" * 46
         return s
@@ -86,8 +98,10 @@ class RunConfig:
         cls,
         prompt_templates_path: str,
         system_prompt_path: str,
-        irt2_data_path: str,
-    ) -> "RunConfig":   
+        data_type: str,
+        model_path: str,
+        tensor_parallel_size: int
+    ) -> "RunConfig":
         """Erstellt RunConfig aus Pfaden"""
         templates = load_prompt_templates(prompt_templates_path)
         tail_templates = templates[0]
@@ -95,10 +109,12 @@ class RunConfig:
         check_templates(tail_templates=tail_templates, head_templates=head_templates)
         system_prompt = load_system_prompt(system_prompt_path)
         return RunConfig(
-            tail_templates,
-            head_templates,
-            system_prompt,
-            irt2_data_path,
+            tail_templates=tail_templates,
+            head_templates=head_templates,
+            system_prompt=system_prompt,
+            data_type=data_type,
+            model_path=model_path,
+            tensor_parallel_size=tensor_parallel_size,
         )
 
 
@@ -127,10 +143,10 @@ def import_config(
         tail_templates = json_file["tail_prompt_templates"]
         head_templates = json_file["head_prompt_templates"]
         system_prompt = json_file["system_prompt"]
-        irt2_data_path = json_file["irt2_data_path"]
-        config = run_config(
-            tail_templates, head_templates, system_prompt, irt2_data_path
-        )
+        data_type = json_file["data_type"]
+        model_path = json_file["model_path"]
+        tensor_parallel_size = json_file["tensor_parallel_size"]
+        config = RunConfig(tail_templates, head_templates, system_prompt, data_type)
     return config
 
 

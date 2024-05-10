@@ -2,13 +2,13 @@ from irt2_llm_prompter import run_config, model_prompter
 from irt2_llm_prompter.run_config import RunConfig
 from irt2_llm_prompter.model_prompter import Model
 
-from vllm import RequestOutput
+from irt2_llm_prompter.sample_config import all_config
+
+from vllm import RequestOutput, SamplingParams
 from typing import List
 
 import re
 import json
-
-import irt2
 
 from irt2.dataset import IRT2
 from irt2.types import Split, Task, Sample, MID, RID, VID
@@ -24,20 +24,35 @@ Tasks = dict[tuple[MID, RID], set[VID]]
 
 # TODO
 # Test laufen lassen
-def run_test(run_config: RunConfig, model: Model):
+def run_test(run_config: RunConfig):
     """Testet Kombination aus RunConfig und Model und erstellt Evaluation"""
     # Erstellt Output-Ordner
     dir: Path = create_result_folder()
     # Exportiert Run-Config in Output-Ordner
     run_config.export("RunConfig", dir)
-    data: IRT2 = IRT2.from_dir(path=run_config.irt2_data_path)
+    dataset = all_config["datasets"][run_config.data_type]
+    data: IRT2 = IRT2.from_dir(path=dataset["path"])
+
+    sampling_params = sampling_params = SamplingParams(
+        temperature=0,
+        top_p=1,
+        use_beam_search=True,
+        best_of=2,
+        max_tokens=512,
+    )
+
+    # Model
+    model = model_prompter.Model(
+        path=run_config.model_path,
+        tensor_parallel_size=run_config.tensor_parallel_size,
+    )
 
     # Subsampling
-    at_most = 1000
-    seed = 31189
-    data = data.tasks_subsample(to=at_most, seed=seed)
+    percentage = dataset["percentage"]
+    seed = dataset["seed"]
+    data = data.tasks_subsample_kgc(percentage=percentage, seed=seed)
 
-    #print(data.open_kgc_val_tails)
+    # print(data.open_kgc_val_tails)
 
     tail_predictions = create_Predictions(
         tasks=data.open_kgc_val_tails,
@@ -68,7 +83,7 @@ def run_test(run_config: RunConfig, model: Model):
     )
     print(evaluation)
 
-    result_file = open(dir / result.txt,"w")
+    result_file = open(dir / result.txt, "w")
     result_file.write(evaluation)
 
     with open(dir / "result.pkl", "wb") as file:
@@ -105,32 +120,32 @@ def create_Predictions(
             mention=mention,
             relation=relation,
         )
-        #print("-" * 20)
-        #print("Prompt: ", prompt)
+        # print("-" * 20)
+        # print("Prompt: ", prompt)
 
         response = model.prompt_model(prompt=prompt)
 
         if response[0].outputs[0].text:
-            #print("Antwort: ", response[0].outputs[0].text)
+            # print("Antwort: ", response[0].outputs[0].text)
 
             mentions = set(s.strip().lower() for s in parseAnswer(response))
 
-            #print("Extrakt: ", mentions)
+            # print("Extrakt: ", mentions)
 
             pr_vids = ds.find_by_mention(
                 *mentions,
                 splits=splits,
             )
 
-            #print("Model-VIDs: ", ((mid, rid), [(vid, 1) for vid in pr_vids]))
+            # print("Model-VIDs: ", ((mid, rid), [(vid, 1) for vid in pr_vids]))
 
-            #print_ground_truth(mid, rid, gt_vids, ds)
+            # print_ground_truth(mid, rid, gt_vids, ds)
         else:
             pr_vids = set()
 
         predictions.append(((mid, rid), [(vid, 1) for vid in pr_vids]))
 
-    #print(predictions)
+    # print(predictions)
     return predictions
 
 
@@ -173,13 +188,14 @@ def build_prompt(
 ) -> str:
     """Baut Prompt zusammen"""
     if relation not in templates:
-        #print("Used generic")
+        # print("Used generic")
         content = templates["generic"].format(mention, relation)
     else:
         content = templates[relation].format(mention)
 
     prompt = "{} {}".format(system_prompt, content)
     return prompt
+
 
 # Ordner für Testergebnisse anlegen, Pfad zurückgeben
 def create_result_folder() -> Path:
