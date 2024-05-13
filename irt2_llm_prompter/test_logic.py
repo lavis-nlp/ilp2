@@ -55,18 +55,20 @@ def _run_benchmark(
         top_p=1,
         use_beam_search=True,
         best_of=2,
-        max_tokens=512,
+        max_tokens=4098,
     )
 
     # Model
     model = model_prompter.Model(
         path=run_config.model_path,
+        params=sampling_params,
         tensor_parallel_size=run_config.tensor_parallel_size,
     )
+    model.load_model()
 
     # Subsampling
-    percentage = dataset["percentage"]
-    seed = dataset["seed"]
+    percentage = dataset["percentage"][mode]
+    seed = all_config["seed"]
     data = data.tasks_subsample_kgc(percentage=percentage, seed=seed)
 
     if mode == "validation":
@@ -117,8 +119,11 @@ def _run_benchmark(
     )
     print(evaluation)
 
-    result_file = open(dir / result.txt, "w")
-    result_file.write(evaluation)
+    json_eval = json.dumps(evaluation)
+
+    result_file = open(dir / "result.txt", "w")
+    result_file.write(json_eval)
+    result_file.write("\n")
 
     with open(dir / "result.pkl", "wb") as file:
         pickle.dump(result, file)
@@ -150,6 +155,7 @@ def create_Predictions(
     ids = ds.idmap
 
     predictions = []
+    n = 1
 
     for (mid, rid), gt_vids in tasks.items():
         mention = ds.mentions[mid]
@@ -160,24 +166,28 @@ def create_Predictions(
             relation=relation,
         )
         prompt = "{} {}".format(system_prompt, prompt_body)
-        print("-" * 20, "\n")
+
+        print("----------------------")
         print("Task: {}, {} -> {}\n".format(mention, relation, prompt_body))
 
         response = model.prompt_model(prompt=prompt)
 
         if response[0].outputs[0].text:
-            print("Antwort: ", response[0].outputs[0].text, "\n")
+            print("Antwort: ", response[0].outputs[0].text.strip())
 
             mentions = set(s.strip().lower() for s in parseAnswer(response))
 
-            print("Extrakt: ", mentions, "\n")
+            print("Extrakt: ", mentions)
 
             pr_vids = ds.find_by_mention(
                 *mentions,
                 splits=splits,
             )
 
-            print("Gefundene Mentions: ", ((mid, rid), [(vid, 1) for vid in pr_vids]))
+            print(
+                "Gefundene Vertices: ",
+                [ds.vertices[vid].split(":")[1] for vid in pr_vids],
+            )
 
             check_ground_truth(
                 mid=mid,
@@ -202,17 +212,26 @@ def check_ground_truth(
     pr_vids,
     ds: IRT2,
 ):
-    """Logging Funktion, True Vids und True Mentions"""
-    print("True vids: (" + ds.mentions[mid] + "," + ds.relations[rid] + ") -> ", end="")
+    """Logging Funktion, vergleiche mit gt"""
+
+    print("GT-Mentions (-FOUND): ", end="")
+    for mention in [
+        ds.idmap.mid2str[mid] for vid in gt_vids for mid in ds.idmap.vid2mids[vid]
+    ]:
+        if mention not in pr_vids:
+            print(mention, end=", ")
+    print("\n")
+
+    print("True vids: ", end="")
     for vertex in (ds.vertices[vid] for vid in gt_vids):
-        print(vertex, end=", ")
-    print("")
+        print(vertex.split(":")[1], end=", ")
+    print("\n")
 
     n: int = 0
     for vid in gt_vids:
         if vid in pr_vids:
             n += 1
-    print("{}/{}\n".format(n, len(gt_vids)))
+    print("Korrekt: {}/{}\n".format(n, len(gt_vids)))
 
 
 def build_prompt_body(

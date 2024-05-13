@@ -80,13 +80,13 @@ class RunConfig:
     # TODO
     def __str__(self) -> str:
         """Gibt Infos zur RunConfig."""
-        s += "System-Prompt: {}\n\n Tail Prompt Templates: {}\n\n Head Prompt Templates: {}\n\n Data: {}\n\n Model-Path: {}\n\n Tensor-Parallel-Size: {}\n".format(
+        s = "System-Prompt: {}\n\n Tail Prompt Templates: {}\n\n Head Prompt Templates: {}\n\n Data: {}\n\n Model-Path: {}\n\n Tensor-Parallel-Size: {}\n".format(
             self.system_prompt,
             self.tail_templates,
             self.head_templates,
             self.data_type,
             self.model_path,
-            self.tensor_parallel_size
+            self.tensor_parallel_size,
         )
         return s
 
@@ -98,7 +98,7 @@ class RunConfig:
         system_prompt_path: str,
         data_type: str,
         model_path: str,
-        tensor_parallel_size: int
+        tensor_parallel_size: int,
     ) -> "RunConfig":
         """Erstellt RunConfig aus Pfaden"""
         templates = load_prompt_templates(prompt_templates_path)
