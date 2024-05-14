@@ -37,7 +37,9 @@ class Model:
             prompts = [
                 prompt,
             ]
-        result = self.llm.generate(prompts=prompts, sampling_params=self.params)
+        result = self.llm.generate(
+            prompts=prompts, sampling_params=self.params, use_tqdm=False
+        )
         return result
 
     def set_sampling_params(self, sampling_params: SamplingParams):

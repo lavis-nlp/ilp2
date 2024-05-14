@@ -10,6 +10,8 @@ from typing import List, Literal
 import re
 import json
 
+from traceback import print_exc
+
 from irt2.dataset import IRT2
 from irt2.types import Split, Task, Sample, MID, RID, VID
 from irt2.evaluation import evaluate
@@ -24,25 +26,29 @@ Tasks = dict[tuple[MID, RID], set[VID]]
 
 def run_on_val(
     run_config: RunConfig,
+    result_folder: str,
 ):
-    _run_benchmark(run_config=run_config, mode="validation")
+    _run_benchmark(
+        run_config=run_config, mode="validation", result_folder=result_folder
+    )
 
 
 def run_on_test(
     run_config: RunConfig,
+    result_folder: str,
 ):
-    _run_benchmark(run_config=run_config, mode="test")
+    _run_benchmark(run_config=run_config, mode="test", result_folder=result_folder)
 
 
 # TODO
 # Test laufen lassen
 def _run_benchmark(
-    run_config: RunConfig,
-    mode: Literal["validation", "test"],
+    run_config: RunConfig, mode: Literal["validation", "test"], result_folder: str
 ):
     """Testet Kombination aus RunConfig und Model und erstellt Evaluation"""
     # Erstellt Output-Ordner
-    dir: Path = create_result_folder()
+    # dir: Path = create_result_folder()
+    dir: Path = Path(result_folder)
     # Exportiert Run-Config in Output-Ordner
     run_config.export("RunConfig", dir)
     dataset = all_config["datasets"][run_config.data_type]
@@ -161,50 +167,83 @@ def create_Predictions(
     n = 1
 
     for (mid, rid), gt_vids in tasks.items():
-        mention = ds.mentions[mid]
-        relation = ds.relations[rid].split(":")[1]
-        prompt_body = build_prompt_body(
-            templates=prompt_templates,
-            mention=mention,
-            relation=relation,
-        )
-        prompt = "{} {}".format(system_prompt, prompt_body)
-        print("----------------------")
-        print("Task: {}, {} -> {}\n".format(mention, relation, prompt_body))
 
-        response = model.prompt_model(prompt=prompt)
-
-        if response[0].outputs[0].text:
-            print("Antwort: ", response[0].outputs[0].text.strip())
-
-            mentions = set(s.strip().lower() for s in parseAnswer(response))
-
-            print("Extrakt: ", mentions)
-
-            pr_vids = ds.find_by_mention(
-                *mentions,
-                splits=splits,
-            )
-
-            print(
-                "Gefundene Vertices: ",
-                [ds.vertices[vid].split(":")[1] for vid in pr_vids],
-            )
-
-            check_ground_truth(
+        try:
+            prediction = create_prediction(
                 mid=mid,
                 rid=rid,
-                gt_vids=gt_vids,
-                pr_vids=pr_vids,
+                prompt_templates=prompt_templates,
+                system_prompt=system_prompt,
                 ds=ds,
+                splits=splits,
+                model=model,
+                gt_vids=gt_vids,
             )
-        else:
-            pr_vids = set()
-            print("Leere Antwort!")
+        except Exception as e:
+            print_exc()
+            predictions.append(((mid, rid), []))
+            continue
 
-        predictions.append(((mid, rid), [(vid, 1) for vid in pr_vids]))
+        predictions.append(((mid, rid), [(vid, 1) for vid in prediction]))
 
     return predictions
+
+
+def create_prediction(
+    mid: MID,
+    rid: RID,
+    prompt_templates: dict,
+    system_prompt: str,
+    ds: IRT2,
+    splits: tuple,
+    model: model_prompter.Model,
+    gt_vids: set[VID],
+) -> set[VID]:
+
+    mention = ds.mentions[mid]
+    relation = ds.relations[rid].split(":")[1]
+
+    prompt_body = build_prompt_body(
+        templates=prompt_templates,
+        mention=mention,
+        relation=relation,
+    )
+
+    prompt = "{} {}".format(system_prompt, prompt_body)
+    print("----------------------")
+    print("Task: {}, {} -> {}\n".format(mention, relation, prompt_body))
+
+    response = model.prompt_model(prompt=prompt)
+
+    if response[0].outputs[0].text:
+        print("Antwort: ", response[0].outputs[0].text.strip())
+
+        mentions = set(s.strip().lower() for s in parseAnswer(response))
+
+        print("Extrakt: ", mentions)
+
+        pr_vids = ds.find_by_mention(
+            *mentions,
+            splits=splits,
+        )
+
+        print(
+            "Gefundene Vertices: ",
+            [ds.vertices[vid].split(":")[1] for vid in pr_vids],
+        )
+
+        check_ground_truth(
+            mid=mid,
+            rid=rid,
+            gt_vids=gt_vids,
+            pr_vids=pr_vids,
+            ds=ds,
+        )
+    else:
+        pr_vids = set()
+        print("Leere Antwort!")
+
+    return pr_vids
 
 
 def check_ground_truth(
@@ -244,9 +283,9 @@ def build_prompt_body(
     """Baut Prompt-Body zusammen"""
     if relation not in templates:
         # print("Used generic")
-        return templates["generic"].format(mention, relation)
+        return templates["generic"].format(m=mention, r=relation)
     else:
-        return templates[relation].format(mention)
+        return templates[relation].format(m=mention)
 
 
 # Ordner für Testergebnisse anlegen, Pfad zurückgeben
