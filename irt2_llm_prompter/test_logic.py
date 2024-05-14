@@ -135,8 +135,11 @@ def parseAnswer(
     """Parsed Model-Output zu Antwortliste"""
     # Extrahiert Text aus Output, stript ihn
     result = model_response[0].outputs[0].text.strip()
-    # Entfernt pre- oder suffixe
-    result = re.search(r"\{([^{}]*)\}", result).group(0)
+    # Trennt pre- oder suffixe
+    result = re.search(r"\{([^{}]*)\}", result)
+    if result is None:
+        return {}
+    result = result.group(0)
     # Parsed zu JSON-File
     json_response = json.loads(result)
     # Extrahiert Antwort Liste
@@ -166,7 +169,6 @@ def create_Predictions(
             relation=relation,
         )
         prompt = "{} {}".format(system_prompt, prompt_body)
-
         print("----------------------")
         print("Task: {}, {} -> {}\n".format(mention, relation, prompt_body))
 
