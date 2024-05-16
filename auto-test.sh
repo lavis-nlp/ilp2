@@ -15,8 +15,8 @@ timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
 results_folder="results"
 mkdir -p "$results_folder"
 
-#datasets=("irt2-cde-tiny" "irt2-cde-small" "irt2-cde-medium" "irt2-cde-large")
-datasets=("irt2-cde-medium")
+datasets=("irt2-cde-tiny" "irt2-cde-small" "irt2-cde-medium" "irt2-cde-large")
+#datasets=("irt2-cde-medium")
 
 for dataset in "${datasets[@]}"; do
     result_dir="$results_folder/$model_name/$timestamp/$dataset/"

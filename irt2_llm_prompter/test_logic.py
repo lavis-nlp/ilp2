@@ -142,12 +142,12 @@ def parseAnswer(
     # Extrahiert Text aus Output, stript ihn
     result = model_response[0].outputs[0].text.strip()
     # Trennt pre- oder suffixe
-    result = re.search(r"\{([^{}]*)\}", result)
-    if result is None:
-        return {}
-    result = result.group(0)
+    if "{" in result and "}" in result:
+        sub = result[result.index("{") : result.index("}") + 1]
+    else:
+        sub = re.search(r"\{([^{}]*)\}", result).group(0)
     # Parsed zu JSON-File
-    json_response = json.loads(result)
+    json_response = json.loads(sub)
     # Extrahiert Antwort Liste
     return json_response["answer"]
 
