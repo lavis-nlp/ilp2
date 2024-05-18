@@ -1,7 +1,12 @@
 import json
+import textwrap
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from dataclasses import dataclass
 
+import yaml
+from ktz.collections import path
+
+import irt2_llm_prompter as ilp
 from irt2_llm_prompter.customErrors import (
     MissingGenericException,
     MissingTemplatesException,
@@ -10,32 +15,19 @@ from irt2_llm_prompter.customErrors import (
 
 @dataclass
 class RunConfig:
-    data_type: str
-
+    # prompts
     tail_templates: dict
     head_templates: dict
     system_prompt: str
 
+    # model configuration
     model_path: str
     tensor_parallel_size: int
 
-    # data:irt2.dataset.IRT2
+    # meta information
 
-    def __init__(
-        self,
-        tail_templates: dict,
-        head_templates: dict,
-        system_prompt: str,
-        data_type: str,
-        model_path: str,
-        tensor_parallel_size: int,
-    ):
-        self.tail_templates = tail_templates
-        self.head_templates = head_templates
-        self.system_prompt = system_prompt
-        self.data_type = data_type
-        self.model_path = model_path
-        self.tensor_parallel_size = tensor_parallel_size
+    system_prompt_path: str | None = None
+    question_prompt_path: str | None = None
 
     # Gibt fertigen tail-completion-prompt zurück
     def get_tail_prompt(self, mention: str, relation: str) -> str:
@@ -58,62 +50,62 @@ class RunConfig:
         prompt = "{} {}".format(self.system_prompt, content)
         return prompt
 
-    def export(self, config_name: str, path: Path = Path("run_configurations")):
-        """Speichert RunConfig mit Namen config_name im Ordner path, default: run_configurations."""
-        if not path.exists():
-            path.mkdir()
-        json_path = path / config_name
-        data = {
-            "tail_prompt_templates": self.tail_templates,
-            "head_prompt_templates": self.head_templates,
-            "system_prompt": self.system_prompt,
-            "data_type": self.data_type,
-            "model_path": self.model_path,
-            "tensor_parallel_size": self.tensor_parallel_size,
-        }
-        with open(json_path, "w") as json_file:
-            json.dump(data, json_file, indent=4)
-
-        print("Run-Configuration nach '{}/{}' exportiert".format(path, config_name))
-
-    # Gibt Infos zur RunConfig
-    # TODO
-    def __str__(self) -> str:
-        """Gibt Infos zur RunConfig."""
-        s = "System-Prompt: {}\n\n Tail Prompt Templates: {}\n\n Head Prompt Templates: {}\n\n Data: {}\n\n Model-Path: {}\n\n Tensor-Parallel-Size: {}\n".format(
-            self.system_prompt,
-            self.tail_templates,
-            self.head_templates,
-            self.data_type,
-            self.model_path,
-            self.tensor_parallel_size,
-        )
-        return s
-
     # Config erstellen aus Daten
     @classmethod
     def from_paths(
         cls,
-        prompt_templates_path: str,
-        system_prompt_path: str,
-        data_type: str,
-        model_path: str,
+        prompt_templates_path: Path,
+        system_prompt_path: Path,
+        model_path: Path,
         tensor_parallel_size: int,
     ) -> "RunConfig":
         """Erstellt RunConfig aus Pfaden"""
-        templates = load_prompt_templates(prompt_templates_path)
-        tail_templates = templates[0]
-        head_templates = templates[1]
-        check_templates(tail_templates=tail_templates, head_templates=head_templates)
+        tail_templates, head_templates = load_prompt_templates(prompt_templates_path)
+
+        check_templates(
+            tail_templates=tail_templates,
+            head_templates=head_templates,
+        )
+
         system_prompt = load_system_prompt(system_prompt_path)
-        return RunConfig(
+
+        return cls(
             tail_templates=tail_templates,
             head_templates=head_templates,
             system_prompt=system_prompt,
-            data_type=data_type,
-            model_path=model_path,
+            model_path=str(model_path),
             tensor_parallel_size=tensor_parallel_size,
         )
+
+    # --- persistence
+
+    def save(self, to: Path | str):
+        """Speichert RunConfig mit Namen config_name im Ordner path, default: run_configurations."""
+        out = path(to)
+        out.parent.mkdir(exist_ok=True, parents=True)
+
+        with out.open("w") as fd:
+            yaml.safe_dump(asdict(self), fd)
+
+        ilp.console.log(f"exported run config to {out}")
+
+    @classmethod
+    def load(cls, fname: Path | str):
+        with path(fname, is_file=True).open(mode="r") as fd:
+            return cls(**yaml.safe_load(fd))
+
+    def __str__(self) -> str:
+        """Gibt Infos zur RunConfig."""
+        rep = f"""
+        run configuration:
+          - {len(self.tail_templates)} tail templates
+          - {len(self.head_templates)} head templates
+          - system prompt: {self.system_prompt_path}
+          - question prompts: {self.question_prompt_path}
+          - model path: {self.model_path} (tps={self.tensor_parallel_size})
+        """
+
+        return textwrap.dedent(rep).strip()
 
 
 def check_templates(tail_templates, head_templates):
@@ -128,26 +120,6 @@ def check_templates(tail_templates, head_templates):
         raise MissingGenericException("Keine Generic Template für Head Completion")
 
 
-# Importert run_config mit namen config_name as Ordner path
-def import_config(
-    config_name: str, path: Path = Path("run_configurations")
-) -> "RunConfig":
-    if not path.exists:
-        print("Kein Ordner, aus dem Importiert werden könnte!")
-        return
-    json_path = path / config_name
-    with open(json_path) as file:
-        json_file = json.load(file)
-        tail_templates = json_file["tail_prompt_templates"]
-        head_templates = json_file["head_prompt_templates"]
-        system_prompt = json_file["system_prompt"]
-        data_type = json_file["data_type"]
-        model_path = json_file["model_path"]
-        tensor_parallel_size = json_file["tensor_parallel_size"]
-        config = RunConfig(tail_templates, head_templates, system_prompt, data_type)
-    return config
-
-
 # Läd Systemprompt von Pfad
 def load_system_prompt(system_prompt_path) -> str:
     with open(system_prompt_path) as file:
@@ -158,7 +130,7 @@ def load_system_prompt(system_prompt_path) -> str:
 
 
 # Läd Prompt-Templates von Pfaden
-def load_prompt_templates(prompt_templates_path: str) -> (dict, dict):
+def load_prompt_templates(prompt_templates_path: Path) -> tuple[dict, dict]:
     with open(prompt_templates_path) as file:
         json_file = json.load(file)
         tail_templates = json_file["tail"]

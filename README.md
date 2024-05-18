@@ -9,3 +9,17 @@ Using chatbots to do open world knowledge graph completion.
 3. Profit
 
 
+```console
+ $ poetry run ilp
+
+ Usage: ilp [OPTIONS] COMMAND [ARGS]...
+
+ Use irt2m from the command line.
+
+╭─ Options ─────────────────────────────────────────────────────╮
+│ --quiet  -q    suppress console output                        │
+│ --debug  -d    activate debug mode (drop into pudb on error)  │
+│ --help         Show this message and exit.                    │
+╰───────────────────────────────────────────────────────────────╯
+```
+

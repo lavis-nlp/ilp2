@@ -1,18 +1,25 @@
 [tool.poetry]
 name = "irt2-llm-prompter"
 version = "0.1.0"
-description = ""
-authors = ["Your Name <you@example.com>"]
+description = "Using chatbots to do open world knowledge graph completion."
+authors = ["Lukas Walker", "Felix Hamann"]
 readme = "README.md"
+
+[tool.poetry.scripts]
+ilp = "irt2_llm_prompter.cli:entry"
 
 [tool.poetry.dependencies]
 python = "^3.11"
 vllm = "^0.4.2"
 irt2 = {path = "lib/irt2", develop = true}
+click = "^8.1.7"
+rich-click = "^1.8.2"
+pretty-errors = "^1.2.25"
+pudb = "^2024.1"
 
 [tool.poetry.group.dev.dependencies]
 ipython = "^8.24.0"
-pudb = "^2024.1"
+
 
 [build-system]
 requires = ["poetry-core"]
