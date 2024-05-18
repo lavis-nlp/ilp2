@@ -3,15 +3,19 @@
 
 import os
 import sys
+from datetime import datetime
+from typing import Literal
 
 import irt2.loader
 import pretty_errors
 import pudb
 import rich_click as click
 from ktz.collections import path
+from vllm import SamplingParams
 
 import irt2_llm_prompter as ilp
 from irt2_llm_prompter.run_config import RunConfig
+from irt2_llm_prompter.runner import run
 
 os.environ["PYTHONBREAKPOINT"] = "pudb.set_trace"
 
@@ -52,13 +56,13 @@ def main(quiet: bool, debug: bool):
 
 @main.command(name="run-experiment")
 @click.option(
-    "--model-name",
-    type=str,
-    required=False,
-    help="optional model name, otherwise directory name of --model-path",
+    "--split",
+    type=click.Choice(["validation", "test"]),
+    required=True,
+    help="run on test or validation",
 )
 @click.option(
-    "--model-path",
+    "--model",
     type=str,
     required=True,
     help="directory for vllm to load a model from",
@@ -93,30 +97,59 @@ def main(quiet: bool, debug: bool):
     help="select keys from dataset-config",
 )
 def run_experiment(
-    model_path: str,
+    split: Literal["validation", "test"],
+    model: str,
     tensor_parallel_size: int,
     system_prompt: str,
     question_template: str,
     dataset_config: str,
     datasets: tuple[str],
-    model_name: str | None = None,
 ):
+    model_path = path(model, is_dir=True)
+    config = RunConfig.from_paths(
+        prompt_templates_path=path(question_template, is_file=True),
+        system_prompt_path=path(system_prompt, is_file=True),
+        model_path=model_path,
+        tensor_parallel_size=tensor_parallel_size,
+        split=split,
+    )
+
+    ilp.console.print("\n", str(config), "\n")
+
+    sampling_params = SamplingParams(
+        temperature=0,
+        top_p=1,
+        use_beam_search=True,
+        best_of=2,
+        max_tokens=1024,
+    )
+
     dsgen = irt2.loader.from_config_file(
         path(dataset_config, is_file=True),
         only=datasets,
     )
 
-    config = RunConfig.from_paths(
-        prompt_templates_path=path(question_template, is_file=True),
-        system_prompt_path=path(system_prompt, is_file=True),
-        model_path=path(model_path, is_dir=True),
-        tensor_parallel_size=tensor_parallel_size,
-    )
-
-    ilp.console.print("\n", str(config), "\n")
-
     for name, dataset in dsgen:
         ilp.console.log(f"running experiments for {name}: {dataset}")
+
+        ts_start = datetime.now()
+        ts_start_str = ts_start.strftime("%Y-%m-%d_%H-%M-%S")
+
+        out = path(
+            path("data") / "experiments" / model_path.name / ts_start_str,
+            create=True,
+        )
+        ilp.console.log(f"write results to {out}")
+
+        run(
+            dataset=dataset,
+            run_config=config,
+            sampling_params=sampling_params,
+            result_folder=out,
+        )
+
+        ts_end = datetime.now()
+        ilp.console.log(f"run took {ts_end - ts_start}")
 
 
 # ----------

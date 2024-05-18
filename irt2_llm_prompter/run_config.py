@@ -2,6 +2,7 @@ import json
 import textwrap
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Literal
 
 import yaml
 from ktz.collections import path
@@ -15,7 +16,11 @@ from irt2_llm_prompter.customErrors import (
 
 @dataclass
 class RunConfig:
+    # data configuration
+    split: Literal["validation", "test"]
+
     # prompts
+    # TODO move
     tail_templates: dict
     head_templates: dict
     system_prompt: str
@@ -25,7 +30,6 @@ class RunConfig:
     tensor_parallel_size: int
 
     # meta information
-
     system_prompt_path: str | None = None
     question_prompt_path: str | None = None
 
@@ -50,14 +54,15 @@ class RunConfig:
         prompt = "{} {}".format(self.system_prompt, content)
         return prompt
 
-    # Config erstellen aus Daten
+    # --- factories
+
     @classmethod
     def from_paths(
         cls,
         prompt_templates_path: Path,
         system_prompt_path: Path,
         model_path: Path,
-        tensor_parallel_size: int,
+        **kwargs,
     ) -> "RunConfig":
         """Erstellt RunConfig aus Pfaden"""
         tail_templates, head_templates = load_prompt_templates(prompt_templates_path)
@@ -74,7 +79,7 @@ class RunConfig:
             head_templates=head_templates,
             system_prompt=system_prompt,
             model_path=str(model_path),
-            tensor_parallel_size=tensor_parallel_size,
+            **kwargs,
         )
 
     # --- persistence

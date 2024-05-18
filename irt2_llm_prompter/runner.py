@@ -1,158 +1,120 @@
-from irt2_llm_prompter import run_config, model_prompter
-from irt2_llm_prompter.run_config import RunConfig
-from irt2_llm_prompter.model_prompter import Model
-
-from irt2_llm_prompter.sample_config import all_config
-
-from vllm import RequestOutput, SamplingParams
+import datetime
+import json
+import pickle
+import re
+from itertools import islice
+from pathlib import Path
+from traceback import print_exc
 from typing import List, Literal
 
-import re
-import json
-
-from traceback import print_exc
-
 from irt2.dataset import IRT2
-from irt2.types import Split, Task, Sample, MID, RID, VID
 from irt2.evaluation import evaluate
+from irt2.types import MID, RID, VID, Sample, Split, Task
+from ktz.collections import path
+from vllm import RequestOutput, SamplingParams
 
-import pickle
-
-import datetime
-from pathlib import Path
+import irt2_llm_prompter as ilp
+from irt2_llm_prompter import model_prompter, run_config
+from irt2_llm_prompter.model_prompter import Model
+from irt2_llm_prompter.run_config import RunConfig
+from irt2_llm_prompter.sample_config import all_config
 
 Tasks = dict[tuple[MID, RID], set[VID]]
 
 
-def run_on_val(
+# formerly: test_run.py:_run_benchmark
+def run(
+    dataset: IRT2,
     run_config: RunConfig,
-    result_folder: str,
-):
-    _run_benchmark(
-        run_config=run_config, mode="validation", result_folder=result_folder
-    )
-
-
-def run_on_test(
-    run_config: RunConfig,
-    result_folder: str,
-):
-    _run_benchmark(run_config=run_config, mode="test", result_folder=result_folder)
-
-
-# TODO
-# Test laufen lassen
-def _run_benchmark(
-    run_config: RunConfig, mode: Literal["validation", "test"], result_folder: str
+    sampling_params: SamplingParams,
+    result_folder: str | Path,
 ):
     """Testet Kombination aus RunConfig und Model und erstellt Evaluation"""
-    # Erstellt Output-Ordner
-    # dir: Path = create_result_folder()
-    dir: Path = Path(result_folder)
-    # Exportiert Run-Config in Output-Ordner
-    run_config.export("RunConfig", dir)
-    dataset = all_config["datasets"][run_config.data_type]
-    data: IRT2 = IRT2.from_dir(path=dataset["path"])
 
-    print(run_config)
+    out = path(result_folder, create=True)
+    run_config.save(to=out / "run-config.yaml")
 
-    sampling_params = sampling_params = SamplingParams(
-        temperature=0,
-        top_p=1,
-        use_beam_search=True,
-        best_of=2,
-        max_tokens=4098,
-    )
-
-    # Model
     model = model_prompter.Model(
         path=run_config.model_path,
         params=sampling_params,
         tensor_parallel_size=run_config.tensor_parallel_size,
     )
-    model.load_model()
 
-    # Subsampling
-    percentage = dataset["percentage"][mode]
-    seed = all_config["seed"]
-    data = data.tasks_subsample_kgc(percentage=percentage, seed=seed)
+    # model.load_model()
 
-    if mode == "validation":
-        tail_predictions = create_Predictions(
-            tasks=data.open_kgc_val_tails,
-            splits=(Split.train, Split.valid),
-            ds=data,
-            prompt_templates=run_config.tail_templates,
-            system_prompt=run_config.system_prompt,
-            model=model,
-        )
-        head_predictions = create_Predictions(
-            tasks=data.open_kgc_val_heads,
-            splits=(Split.train, Split.valid),
-            ds=data,
-            prompt_templates=run_config.head_templates,
-            system_prompt=run_config.system_prompt,
-            model=model,
-        )
-    else:
-        tail_predictions = create_Predictions(
-            tasks=data.open_kgc_test_tails,
-            splits=(Split.train, Split.valid, Split.test),
-            ds=data,
-            prompt_templates=run_config.tail_templates,
-            system_prompt=run_config.system_prompt,
-            model=model,
-        )
-        head_predictions = create_Predictions(
-            tasks=data.open_kgc_test_heads,
-            splits=(Split.train, Split.valid, Split.test),
-            ds=data,
-            prompt_templates=run_config.head_templates,
-            system_prompt=run_config.system_prompt,
-            model=model,
-        )
+    tail_tasks, head_tasks = {
+        "validation": (
+            dataset.open_kgc_val_tails,
+            dataset.open_kgc_val_heads,
+        ),
+        "test": (
+            dataset.open_kgc_test_tails,
+            dataset.open_kgc_test_heads,
+        ),
+    }[run_config.split]
+
+    ilp.console.log("creating tail predictions")
+    tail_predictions = create_predictions(
+        tasks=tail_tasks,
+        splits=(Split.train,),
+        ds=dataset,
+        prompt_templates=run_config.tail_templates,
+        system_prompt=run_config.system_prompt,
+        model=model,
+    )
+
+    ilp.console.log("creating head predictions")
+    head_predictions = create_predictions(
+        tasks=head_tasks,
+        splits=(Split.train,),
+        ds=dataset,
+        prompt_templates=run_config.head_templates,
+        system_prompt=run_config.system_prompt,
+        model=model,
+    )
 
     result = dict()
     result["tail_predictions"] = tail_predictions
     result["head_predictions"] = head_predictions
 
     evaluation = evaluate(
-        ds=data,
+        ds=dataset,
         task="kgc",
-        split=mode,
+        split=run_config.split,
         head_predictions=head_predictions,
         tail_predictions=tail_predictions,
     )
+
     print(evaluation)
 
     json_eval = json.dumps(evaluation)
 
-    result_file = open(dir / "result.txt", "w")
+    result_file = open(out / "result.txt", "w")
     result_file.write(json_eval)
     result_file.write("\n")
 
-    with open(dir / "result.pkl", "wb") as file:
+    with open(out / "result.pkl", "wb") as file:
         pickle.dump(result, file)
 
 
-def parseAnswer(
+def parse_answer(
     model_response: List[RequestOutput],
-):
+) -> list[str]:
     """Parsed Model-Output zu Antwortliste"""
     # Extrahiert Text aus Output, stript ihn
     result = model_response[0].outputs[0].text.strip()
+
     # Trennt pre- oder suffixe
-    if "{" in result and "}" in result:
-        sub = result[result.index("{") : result.index("}") + 1]
-    else:
-        sub = re.search(r"\{([^{}]*)\}", result).group(0)
-    # Parsed zu JSON-File
-    json_response = json.loads(sub)
+    if "{" not in result or "}" not in result:
+        return []
+
+    sub = result[result.index("{") : result.index("}") + 1]
+
     # Extrahiert Antwort Liste
-    return json_response["answer"]
+    return json.loads(sub)["answer"]
 
 
-def create_Predictions(
+def create_predictions(
     tasks: Tasks,
     splits: tuple,
     ds: IRT2,
@@ -166,8 +128,7 @@ def create_Predictions(
     predictions = []
     n = 1
 
-    for (mid, rid), gt_vids in tasks.items():
-
+    for (mid, rid), gt_vids in islice(tasks.items(), None):
         try:
             prediction = create_prediction(
                 mid=mid,
@@ -199,7 +160,6 @@ def create_prediction(
     model: model_prompter.Model,
     gt_vids: set[VID],
 ) -> set[VID]:
-
     mention = ds.mentions[mid]
     relation = ds.relations[rid].split(":")[1]
 
@@ -218,7 +178,7 @@ def create_prediction(
     if response[0].outputs[0].text:
         print("Antwort: ", response[0].outputs[0].text.strip())
 
-        mentions = set(s.strip().lower() for s in parseAnswer(response))
+        mentions = set(s.strip().lower() for s in parse_answer(response))
 
         print("Extrakt: ", mentions)
 
