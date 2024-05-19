@@ -1,21 +1,21 @@
+import csv
 import gzip
 import json
-import pickle
 import textwrap
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from itertools import islice
 from pathlib import Path
 from traceback import print_exc
-from typing import Generator, Iterable, List, Literal
+from typing import Generator, Iterable, Literal
 
 import orjson
 import yaml
 from irt2.dataset import IRT2
 from irt2.evaluation import Predictions, evaluate
 from irt2.types import MID, RID, VID, Split, Task
-from ktz.collections import path
-from vllm import RequestOutput, SamplingParams
+from ktz.collections import dflat, path
+from vllm import SamplingParams
 
 import irt2_llm_prompter as ilp
 from irt2_llm_prompter import model_prompter
@@ -97,12 +97,16 @@ class Config:
     system_prompt_path: str
     prompt_templates_path: str
 
-    # TODO sample params
+    # sampling params
+    temperature: int = 0
+    top_p: int = 1
+    use_beam_search: bool = True
+    best_of: int = 2
+    max_tokens: int = 1024
 
     # --- persistence
 
     def save(self, to: Path | str):
-        """Speichert RunConfig mit Namen config_name im Ordner path, default: run_configurations."""
         out = path(to)
         out.parent.mkdir(exist_ok=True, parents=True)
 
@@ -117,15 +121,8 @@ class Config:
             return cls(**yaml.safe_load(fd))
 
     def __str__(self) -> str:
-        """Gibt Infos zur RunConfig."""
-        rep = f"""
-        run configuration:
-          - system prompt: {self.system_prompt_path}
-          - question prompts: {self.prompt_templates_path}
-          - model path: {self.model_path} (tps={self.tensor_parallel_size})
-        """
-
-        return textwrap.dedent(rep).strip()
+        sep = "\n  - "
+        return "Config:" + sep + sep.join(f"{k}: {v}" for k, v in asdict(self).items())
 
 
 @dataclass
@@ -288,11 +285,8 @@ class Runner:
 
             # --- logging
 
-            # write answer to prompt log
             rep = {"prompt": asdict(prompt), "output": output}
             self._ctx_model_answers.write(orjson.dumps(rep) + b"\n")
-
-            # write answer to trace log
             self._trace(
                 "-" * 80,
                 "\n  -".join(f"{k}: {v}" for k, v in asdict(prompt).items()),
@@ -301,12 +295,13 @@ class Runner:
                 f"proposed vertices: {', '.join(self.ds.vertices[vid] for vid in pr_vids)}",
                 f"true vertices: {', '.join(self.ds.vertices[vid] for vid in gt_vids)}",
                 f"{len(gt_vids & pr_vids)}/{len(gt_vids)} vids are correct",
+                f"{len(pr_vids - gt_vids)} are incorrectly predicted vertices",
                 "\n",
             )
 
         return preds
 
-    def predict_all(self):
+    def predict_all(self) -> dict[Literal["head", "tail"], Predictions]:
         self._trace("running predict() for tail tasks")
         tail_preds = self.predict(
             tasks=self.tail_tasks,
@@ -319,19 +314,32 @@ class Runner:
             prompt_templates=self.head_templates,
         )
 
+        return dict(
+            tail=tail_preds,
+            head=head_preds,
+        )
+
 
 # formerly: test_run.py:_run_benchmark
 def run(
     dataset: IRT2,
     config: Config,
-    sampling_params: SamplingParams,
     result_folder: str | Path,
-):
-    """Testet Kombination aus RunConfig und Model und erstellt Evaluation"""
+) -> dict:
+    ts_start = datetime.now()
 
     out = path(result_folder, create=True)
     config.save(to=out / "run-config.yaml")
 
+    sampling_params = SamplingParams(
+        temperature=config.temperature,
+        top_p=config.top_p,
+        use_beam_search=config.use_beam_search,
+        best_of=config.best_of,
+        max_tokens=config.max_tokens,
+    )
+
+    ilp.console.log(f"loading model from {config.model_path}")
     model = model_prompter.Model(
         path=config.model_path,
         params=sampling_params,
@@ -339,6 +347,7 @@ def run(
     )
 
     model.load_model()
+    ilp.console.log(f"finished loading model")
 
     tail_tasks, head_tasks = {
         "validation": (
@@ -375,32 +384,42 @@ def run(
         head_templates=head_templates,
     )
 
+    ilp.console.log("create predictions and evaluate")
     with runner as runner:
         predictions = runner.predict_all()
 
-    return
-
-    # ---
-
-    result = dict()
-    result["tail_predictions"] = tail_predictions
-    result["head_predictions"] = head_predictions
-
-    evaluation = evaluate(
+    report = evaluate(
         ds=dataset,
         task="kgc",
-        split=run_config.split,
-        head_predictions=head_predictions,
-        tail_predictions=tail_predictions,
+        split=config.split,
+        head_predictions=predictions["head"],
+        tail_predictions=predictions["tail"],
     )
 
-    print(evaluation)
+    ts_end = datetime.now()
 
-    json_eval = json.dumps(evaluation)
+    # --- logging
 
-    result_file = open(out / "result.txt", "w")
-    result_file.write(json_eval)
-    result_file.write("\n")
+    ilp.console.log(f"finished evaluation, run took {ts_end - ts_start}")
+    ilp.console.print(report["all"]["micro"])
 
-    with open(out / "result.pkl", "wb") as file:
-        pickle.dump(result, file)
+    with (out / "evaluation-report.yaml").open(mode="w") as fd:
+        yaml.safe_dump(report, fd)
+
+    with (out / "evaluation-report.csv").open(mode="w") as fd:
+        csv_meta = (
+            ("dataset", dataset.name),
+            ("run", out.name),
+            ("duration", ts_end - ts_start),
+            ("start", ts_start),
+            ("end", ts_end),
+        )
+
+        csv_meta += tuple(asdict(config).items())
+        csv_report = tuple(sorted(dflat(report, sep=" ").items()))
+
+        writer = csv.writer(fd)
+        for row in zip(*(csv_meta + csv_report)):
+            writer.writerow(row)
+
+    return report

@@ -101,6 +101,18 @@ def main(quiet: bool, debug: bool):
     required=False,
     help="run at most n samples per direction (head/tail)",
 )
+@click.option(
+    "--output-prefix",
+    type=str,
+    required=False,
+    default="",
+    help="prefix put before the timestamp of the result directory",
+)
+@click.option("--sampling-temperature", type=int)
+@click.option("--sampling-top-p", type=int)
+@click.option("--sampling-use-beam-search", type=bool)
+@click.option("--sampling-best-of", type=int)
+@click.option("--sampling-max-tokens", type=int)
 def run_experiment(
     split: Literal["validation", "test"],
     model: str,
@@ -110,26 +122,24 @@ def run_experiment(
     dataset_config: str,
     datasets: tuple[str],
     limit_tasks: int | None,
+    output_prefix: str,
+    **sampling_params,
 ):
-    run_config = Config(
+    config = Config(
         split=split,
         task_limit=limit_tasks,
         model_path=model,
-        tensor_parallel_size=tensor_parallel_size,
         prompt_templates_path=question_template,
         system_prompt_path=system_prompt,
+        tensor_parallel_size=tensor_parallel_size,
+        **{
+            k.replace("sampling_", ""): v
+            for k, v in sampling_params.items()
+            if v is not None
+        },
     )
 
-    ilp.console.print("\n", str(run_config), "\n")
-
-    # TODO use model config files which also contain the model path
-    sampling_params = SamplingParams(
-        temperature=0,
-        top_p=1,
-        use_beam_search=True,
-        best_of=2,
-        max_tokens=1024,
-    )
+    ilp.console.print("\n", str(config), "\n")
 
     dsgen = irt2.loader.from_config_file(
         path(dataset_config, is_file=True),
@@ -139,25 +149,21 @@ def run_experiment(
     model_path = path(model)
     for name, dataset in dsgen:
         ilp.console.log(f"running experiments for {name}: {dataset}")
+        ts_start_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-        ts_start = datetime.now()
-        ts_start_str = ts_start.strftime("%Y-%m-%d_%H-%M-%S")
-
+        dirname = f"{output_prefix}{ts_start_str}"
         out = path(
-            path("data") / "experiments" / model_path.name / ts_start_str,
+            path("data") / "experiments" / model_path.name / dirname,
             create=True,
         )
+
         ilp.console.log(f"write results to {out}")
 
         run(
             dataset=dataset,
-            config=run_config,
-            sampling_params=sampling_params,
+            config=config,
             result_folder=out,
         )
-
-        ts_end = datetime.now()
-        ilp.console.log(f"run took {ts_end - ts_start}")
 
 
 # ----------

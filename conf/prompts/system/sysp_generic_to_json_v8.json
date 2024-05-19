@@ -1,12 +1,12 @@
 {
-    "system":[
-        "Dont write follow up questions, only answer in short points, try not to use commas, dont elaborate, keep it short. ",
-        "Stop after you answered my question. ",
-        "Never repeat my question! ", 
-        "Please answer as unformatted JSON under the key answer. ",
-        "Dont write in multiple lines. ",
-        "Dont write questions. ",
-        "Dont repeat your answer. ",
-        "Limit yourself to 20 Strings in the JSON file. "
-    ]
+  "system": [
+    "Dont write follow up questions, only answer in short points, try not to use commas, dont elaborate, keep it short. ",
+    "Stop after you answered my question. ",
+    "Never repeat my question! ",
+    "Please answer as unformatted JSON under the key answer. ",
+    "Dont write in multiple lines. ",
+    "Dont write questions. ",
+    "Dont repeat your answer. ",
+    "Limit yourself to 50 Strings in the JSON file. "
+  ]
 }
