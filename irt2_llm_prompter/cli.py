@@ -108,9 +108,10 @@ def main(quiet: bool, debug: bool):
     default="",
     help="prefix put before the timestamp of the result directory",
 )
-@click.option("--sampling-temperature", type=int)
-@click.option("--sampling-top-p", type=int)
+@click.option("--sampling-temperature", type=float)
+@click.option("--sampling-top-p", type=float)
 @click.option("--sampling-use-beam-search", type=bool)
+@click.option("--sampling-early-stopping", type=bool)
 @click.option("--sampling-best-of", type=int)
 @click.option("--sampling-max-tokens", type=int)
 def run_experiment(
