@@ -14,8 +14,7 @@ from ktz.collections import path
 from vllm import SamplingParams
 
 import irt2_llm_prompter as ilp
-from irt2_llm_prompter.run_config import RunConfig
-from irt2_llm_prompter.runner import run
+from irt2_llm_prompter.runner import Config, run
 
 os.environ["PYTHONBREAKPOINT"] = "pudb.set_trace"
 
@@ -96,6 +95,12 @@ def main(quiet: bool, debug: bool):
     multiple=True,
     help="select keys from dataset-config",
 )
+@click.option(
+    "--limit-tasks",
+    type=int,
+    required=False,
+    help="run at most n samples per direction (head/tail)",
+)
 def run_experiment(
     split: Literal["validation", "test"],
     model: str,
@@ -104,18 +109,20 @@ def run_experiment(
     question_template: str,
     dataset_config: str,
     datasets: tuple[str],
+    limit_tasks: int | None,
 ):
-    model_path = path(model, is_dir=True)
-    config = RunConfig.from_paths(
-        prompt_templates_path=path(question_template, is_file=True),
-        system_prompt_path=path(system_prompt, is_file=True),
-        model_path=model_path,
-        tensor_parallel_size=tensor_parallel_size,
+    run_config = Config(
         split=split,
+        task_limit=limit_tasks,
+        model_path=model,
+        tensor_parallel_size=tensor_parallel_size,
+        prompt_templates_path=question_template,
+        system_prompt_path=system_prompt,
     )
 
-    ilp.console.print("\n", str(config), "\n")
+    ilp.console.print("\n", str(run_config), "\n")
 
+    # TODO use model config files which also contain the model path
     sampling_params = SamplingParams(
         temperature=0,
         top_p=1,
@@ -129,6 +136,7 @@ def run_experiment(
         only=datasets,
     )
 
+    model_path = path(model)
     for name, dataset in dsgen:
         ilp.console.log(f"running experiments for {name}: {dataset}")
 
@@ -143,7 +151,7 @@ def run_experiment(
 
         run(
             dataset=dataset,
-            run_config=config,
+            config=run_config,
             sampling_params=sampling_params,
             result_folder=out,
         )
