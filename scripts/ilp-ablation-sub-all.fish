@@ -1,7 +1,7 @@
 #!/usr/bin/env fish
 
-# ablation study observing model performance based
-# on temperature, beam width and top-p
+# ablation study observing model performance based on temperature
+# for all datasets
 
 
 set argv \
