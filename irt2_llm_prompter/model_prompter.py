@@ -9,7 +9,7 @@ class Model:
     params: SamplingParams
     is_loaded: bool = False
 
-    llm: LLM
+    llm: LLM | None
 
     def __init__(
         self,
@@ -20,9 +20,12 @@ class Model:
         self.model_path = path
         self.tensor_parallel_size = tensor_parallel_size
         self.params = params
+        self.llm = None
 
     def load_model(self):
-        """Läd model aus Objektconfig"""
+        if self.llm is not None:
+            return
+
         self.llm = LLM(
             model=self.model_path,
             tensor_parallel_size=self.tensor_parallel_size,
@@ -31,6 +34,8 @@ class Model:
         self.is_loaded = True
 
     def prompt(self, prompts: Iterable[str]) -> Generator[str, None, None]:
+        assert self.llm is not None
+
         outputs = self.llm.generate(
             prompts=list(prompts),
             sampling_params=self.params,
