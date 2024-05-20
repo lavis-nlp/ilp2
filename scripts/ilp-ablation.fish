@@ -13,14 +13,14 @@ set argv \
     --split validation \
     --dataset-config lib/irt2/conf/datasets/original-subsampled.yaml \
     --model /data/hiwi/lukas/llms/llama3/Meta-Llama-3-70B-Instruct \
-    --output-prefix abl-1-
+    --output-prefix abl-2-
 
 set ilp poetry run ilp run-experiment
 
 
 # beam search
 for early_stopping in y n
-    for best_of in 2 4
+    for best_of in 6 8
         echo -e '\n====================\n'
 
         $ilp $argv \
@@ -32,8 +32,8 @@ end
 
 
 # random sampling
-for temperature in 0.5 1 1.5
-    for top_p in 0.5 1
+for temperature in 0.1 0.2 0.3 0.4
+    for top_p in 1
         for best_of in 1 2 4
             echo -e '\n====================\n'
 
