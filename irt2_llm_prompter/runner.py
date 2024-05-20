@@ -21,17 +21,8 @@ from irt2_llm_prompter.model_prompter import Model
 Tasks = dict[tuple[MID, RID], set[VID]]
 
 
-# TODO used?
-# def check_templates(tail_templates, head_templates):
-#     """Überprüft prompt templates auf Vollständigkeit"""
-#     if tail_templates is None:
-#         raise MissingTemplatesException("Keine Tail Templates in Datei")
-#     if "generic" not in tail_templates:
-#         raise MissingGenericException("Keine Generic Template für Tail Completion")
-#     if head_templates is None:
-#         raise MissingTemplatesException("Keine Tail Templates in Datei")
-#     if "generic" not in head_templates:
-#         raise MissingGenericException("Keine Generic Template für Head Completion")
+# TODO prompt generation and vertex lookup
+# should become the task of the model, not the runner
 
 
 def parse_answer(output: str) -> list[str]:
