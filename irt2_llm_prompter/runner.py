@@ -1,7 +1,6 @@
 import csv
 import gzip
 import json
-import textwrap
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from itertools import islice
@@ -15,10 +14,8 @@ from irt2.dataset import IRT2
 from irt2.evaluation import Predictions, evaluate
 from irt2.types import MID, RID, VID, Split, Task
 from ktz.collections import dflat, path
-from vllm import SamplingParams
 
 import irt2_llm_prompter as ilp
-from irt2_llm_prompter import model_prompter
 from irt2_llm_prompter.model_prompter import Model
 
 Tasks = dict[tuple[MID, RID], set[VID]]
