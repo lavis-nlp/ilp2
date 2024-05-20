@@ -18,7 +18,8 @@ set argv \
 set ilp poetry run ilp run-experiment
 
 
-for temperature in 0.1 0.2 0.3 0.4 0.5
+# for temperature in 0.1 0.2 0.3 0.4 0.5
+for temperature in 0.6 0.7
     echo -e "\n==================== temperature = $temperature\n"
 
     $ilp $argv \
