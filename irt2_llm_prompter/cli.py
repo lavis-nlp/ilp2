@@ -4,6 +4,7 @@
 import os
 import sys
 from datetime import datetime
+from traceback import print_exc
 from typing import Literal
 
 import irt2.loader
@@ -108,6 +109,11 @@ def main(quiet: bool, debug: bool):
     default="",
     help="prefix put before the timestamp of the result directory",
 )
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="do not load the model but instead always answer right",
+)
 @click.option("--sampling-temperature", type=float)
 @click.option("--sampling-top-p", type=float)
 @click.option("--sampling-use-beam-search", type=bool)
@@ -124,6 +130,7 @@ def run_experiment(
     datasets: tuple[str],
     limit_tasks: int | None,
     output_prefix: str,
+    dry_run: bool = False,
     **sampling_params,
 ):
     config = Config(
@@ -132,6 +139,7 @@ def run_experiment(
         model_path=model,
         prompt_templates_path=question_template,
         system_prompt_path=system_prompt,
+        dataset_path=dataset_config,
         tensor_parallel_size=tensor_parallel_size,
         **{
             k.replace("sampling_", ""): v
@@ -147,6 +155,9 @@ def run_experiment(
         only=datasets,
     )
 
+    if dry_run:
+        output_prefix += "dry-"
+
     model_path = path(model)
     for name, dataset in dsgen:
         ilp.console.log(f"running experiments for {name}: {dataset}")
@@ -160,11 +171,17 @@ def run_experiment(
 
         ilp.console.log(f"write results to {out}")
 
-        run(
-            dataset=dataset,
-            config=config,
-            result_folder=out,
-        )
+        try:
+            run(
+                dataset=dataset,
+                config=config,
+                result_folder=out,
+                dry_run=dry_run,
+            )
+        except Exception as exc:
+            ilp.console.log(f"{exc} occurred! writing postmortem")
+            with (out / "postmortem.txt").open(mode="w") as fd:
+                print_exc(file=fd)
 
 
 # ----------

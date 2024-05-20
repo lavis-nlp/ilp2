@@ -24,7 +24,7 @@ from irt2_llm_prompter.model_prompter import Model
 Tasks = dict[tuple[MID, RID], set[VID]]
 
 
-# TODO usage?
+# TODO used?
 # def check_templates(tail_templates, head_templates):
 #     """Überprüft prompt templates auf Vollständigkeit"""
 #     if tail_templates is None:
@@ -71,7 +71,24 @@ def load_system_prompt(fpath: str | Path) -> str:
     return system_prompt
 
 
-def load_prompt_templates(fpath: str | Path) -> tuple[dict, dict]:
+def load_prompt_templates(ds: IRT2, fpath: str | Path):
+    with path(fpath, is_file=True).open(mode="r") as fd:
+        prompts = yaml.safe_load(fd)
+
+    for conf in prompts:
+        for name in conf["datasets"]:
+            if name != ds.name:
+                continue
+
+            return (
+                conf["prompts"]["tail"],
+                conf["prompts"]["head"],
+            )
+
+    assert False, f"{ds.name} not found in template"
+
+
+def _load_prompt_templates(fpath: str | Path) -> tuple[dict, dict]:
     with path(fpath, is_file=True).open(mode="r") as fd:
         json_file = json.load(fd)
 
@@ -96,13 +113,18 @@ class Config:
     # meta information
     system_prompt_path: str
     prompt_templates_path: str
+    dataset_path: str
 
-    # sampling params
-    temperature: int = 0
-    top_p: int = 1
+    # sampling params (beam search)
     use_beam_search: bool = True
-    best_of: int = 2
-    max_tokens: int = 1024
+    early_stopping: bool = False  # must be False for random sampling
+    best_of: int = 2  # must be 1 for greedy sampling (t=0)
+
+    # sampling params (random sampling)
+    temperature: float = 0  # greedy if beam_search is False and set to 0
+    top_p: float = 1  # consider tokens until their cum. prob. reaches
+
+    max_tokens: int = 512
 
     # --- persistence
 
@@ -212,6 +234,7 @@ class Runner:
         ilp.console.log(f"closing file descriptors")
         self._ctx_trace_log.close()
         self._ctx_error_log.close()
+        self._ctx_model_answers.close()
 
     # --- logging
 
@@ -253,6 +276,7 @@ class Runner:
         self,
         tasks: Tasks,
         prompt_templates: dict,
+        dry_run: bool = False,
     ) -> Predictions:
         # generator chain for batched processing
 
@@ -264,11 +288,24 @@ class Runner:
         # ensure batched processing, however, it returns only after
         # all generation is done (TODO stream processing?)
         prompts, gt = zip(*prompts)
-        outputs = self.model.prompt(prompt.body for prompt in prompts)
+
+        if not dry_run:
+            outputs = self.model.prompt(prompt.body for prompt in prompts)
+        else:
+            outputs = ["" for _ in range(len(prompts))]
 
         preds = []
         for prompt, output, gt_vids in zip(prompts, outputs, gt):
-            mentions = self._safe_parse_answer(prompt, output)
+            if not dry_run:
+                mentions = self._safe_parse_answer(prompt, output)
+
+            else:
+                mentions = [
+                    self.ds.idmap.mid2str[mid]
+                    for vid in gt_vids
+                    for mid in self.ds.idmap.vid2mids[vid]
+                ]
+
             if not mentions:
                 preds.append((prompt.task, []))
                 continue
@@ -301,17 +338,22 @@ class Runner:
 
         return preds
 
-    def predict_all(self) -> dict[Literal["head", "tail"], Predictions]:
+    def predict_all(
+        self,
+        dry_run: bool = False,
+    ) -> dict[Literal["head", "tail"], Predictions]:
         self._trace("running predict() for tail tasks")
         tail_preds = self.predict(
             tasks=self.tail_tasks,
             prompt_templates=self.tail_templates,
+            dry_run=dry_run,
         )
 
         self._trace("running predict() for head tasks")
         head_preds = self.predict(
             tasks=self.head_tasks,
             prompt_templates=self.head_templates,
+            dry_run=dry_run,
         )
 
         return dict(
@@ -325,6 +367,7 @@ def run(
     dataset: IRT2,
     config: Config,
     result_folder: str | Path,
+    dry_run: bool = False,
 ) -> dict:
     ts_start = datetime.now()
 
@@ -346,8 +389,9 @@ def run(
         tensor_parallel_size=config.tensor_parallel_size,
     )
 
-    model.load_model()
-    ilp.console.log(f"finished loading model")
+    if not dry_run:
+        model.load_model()
+        ilp.console.log(f"finished loading model")
 
     tail_tasks, head_tasks = {
         "validation": (
@@ -365,6 +409,7 @@ def run(
     search_splits = (Split.train,)
 
     tail_templates, head_templates = load_prompt_templates(
+        dataset,
         config.prompt_templates_path,
     )
     system_prompt = load_system_prompt(
@@ -386,7 +431,7 @@ def run(
 
     ilp.console.log("create predictions and evaluate")
     with runner as runner:
-        predictions = runner.predict_all()
+        predictions = runner.predict_all(dry_run)
 
     report = evaluate(
         ds=dataset,
