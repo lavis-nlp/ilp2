@@ -15,6 +15,7 @@ from ktz.collections import path
 from vllm import SamplingParams
 
 import irt2_llm_prompter as ilp
+from irt2_llm_prompter import model_prompter
 from irt2_llm_prompter.runner import Config, run
 
 os.environ["PYTHONBREAKPOINT"] = "pudb.set_trace"
@@ -159,6 +160,26 @@ def run_experiment(
         output_prefix += "dry-"
 
     model_path = path(model)
+
+    sampling_params = SamplingParams(
+        temperature=config.temperature,
+        top_p=config.top_p,
+        use_beam_search=config.use_beam_search,
+        best_of=config.best_of,
+        max_tokens=config.max_tokens,
+    )
+
+    llm = model_prompter.Model(
+        path=str(config.model_path),
+        params=sampling_params,
+        tensor_parallel_size=config.tensor_parallel_size,
+    )
+
+    if not dry_run:
+        ilp.console.log(f"loading model from {model_path}")
+        llm.load_model()
+        ilp.console.log(f"finished loading model")
+
     for name, dataset in dsgen:
         ilp.console.log(f"running experiments for {name}: {dataset}")
         ts_start_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -173,6 +194,7 @@ def run_experiment(
 
         try:
             run(
+                model=llm,
                 dataset=dataset,
                 config=config,
                 result_folder=out,

@@ -88,18 +88,6 @@ def load_prompt_templates(ds: IRT2, fpath: str | Path):
     assert False, f"{ds.name} not found in template"
 
 
-def _load_prompt_templates(fpath: str | Path) -> tuple[dict, dict]:
-    with path(fpath, is_file=True).open(mode="r") as fd:
-        json_file = json.load(fd)
-
-        tail_templates = json_file["tail"]
-        head_templates = json_file["head"]
-
-        assert isinstance(tail_templates, dict) and isinstance(head_templates, dict)
-
-    return tail_templates, head_templates
-
-
 @dataclass
 class Config:
     # data configuration
@@ -364,6 +352,7 @@ class Runner:
 
 # formerly: test_run.py:_run_benchmark
 def run(
+    model: Model,
     dataset: IRT2,
     config: Config,
     result_folder: str | Path,
@@ -373,25 +362,6 @@ def run(
 
     out = path(result_folder, create=True)
     config.save(to=out / "run-config.yaml")
-
-    sampling_params = SamplingParams(
-        temperature=config.temperature,
-        top_p=config.top_p,
-        use_beam_search=config.use_beam_search,
-        best_of=config.best_of,
-        max_tokens=config.max_tokens,
-    )
-
-    ilp.console.log(f"loading model from {config.model_path}")
-    model = model_prompter.Model(
-        path=config.model_path,
-        params=sampling_params,
-        tensor_parallel_size=config.tensor_parallel_size,
-    )
-
-    if not dry_run:
-        model.load_model()
-        ilp.console.log(f"finished loading model")
 
     tail_tasks, head_tasks = {
         "validation": (
