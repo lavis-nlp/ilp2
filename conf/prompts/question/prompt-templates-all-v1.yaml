@@ -1,0 +1,134 @@
+- datasets:
+    - BLP/WN18RR
+  prompts:
+    head:
+      generic: "{m}, {r}"
+      Also See: What other terms are related to {m}?
+      Derivationally Related Form: What words are derived from {m}?
+      Has Part: What are the parts of {m}?
+      Hypernym: What is a broader category that {m} falls under?
+      Instance Hypernym: What general category does {m} belong to as a specific instance?
+      Member Meronym: What groups or collections include {m} as a member?
+      Member Of Domain Region: In which geographical regions is {m} primarily used or found?
+      Member Of Domain Usage: In what context or field is {m} commonly used?
+      Similar To: What terms are similar to {m}?
+      Synset Domain Topic Of: What topics or subjects are associated with the synset that includes {m}?
+      Verb Group: What verbs are grouped with {m} in terms of meaning or usage?
+    tail:
+      generic: "{m}, {r}"
+      Also See: What terms does {m} also relate to?
+      Derivationally Related Form: What words are {m} derived from?
+      Has Part: What wholes is {m} a part of?
+      Hypernym: What narrower terms fall under the category of {m}?
+      Instance Hypernym: What specific instances fall under the general category of {m}?
+      Member Meronym: What is the group which {m} belongs to?
+      Member Of Domain Region: In which geographical regions is {m} primarily used or found?
+      Member Of Domain Usage: In what context or field is {m} commonly used?
+      Similar To: What terms is {m} similar to?
+      Synset Domain Topic Of: What topics or subjects are associated with the synset that includes {m}?
+      Verb Group: What verbs are grouped with {m} in terms of meaning or usage?
+- datasets:
+    - BLP/FB15K237
+  prompts:
+    head:
+    tail:
+- datasets:
+    - IRT2/CDE-T
+    - IRT2/CDE-S
+    - IRT2/CDE-M
+    - IRT2/CDE-L
+  prompts:
+    head:
+      generic: "{m}, {r}"
+      cast member: What movies has {m} starred in as a cast member?
+      cause of death: Name people who died of {m}.
+      child: Whos child is {m}?
+      continent: What is located on the continent of {m}.
+      country: Name movies produces in {m}.
+      country of citizenship: Name citizens of {m}.
+      country of origin: Name things originating in {m}.
+      diplomatic relation: With which countries does {m} have diplomatic relations?
+      director: Which movies has {m} directed?
+      educated at: Name people who were educated at {m}.
+      employer: Name employees of {m}
+      ethnic group: Name people of the ethnic group {m}.
+      field of work: Name people who work in {m}.
+      founded by: What institution or entity was founded by {m}?
+      genre: Name titles of the {m} genre.
+      headquarters location: Whos headquarter is lies in {m}?
+      industry: Name people who works in {m}.
+      influenced by: "Who's work was influenced by {m}?"
+      instrument: Name people who are known for playing the {m}
+      language of work or name: What operates in {m}?
+      languages spoken, written, or signed: Name people who speak {m}.
+      located in the administrative terroritorial entity: What administrative terroritorial entity is {m} located in?
+      location of formation: Which entities were formed in {m}.
+      medical condition: Who is known for suffering of {m}.
+      member of: Name people who were a member of {m}.
+      member of political party: Name members of the political party {m}.
+      movement: Name activists of the {m} movement.
+      named after: Who or what is named after {m}?
+      narrative location: Name titles whos narrative played out in {m}.
+      occupation: Name people who work as {m}.
+      official language: Whos official language is {m}.
+      parent organization: What are subsidiary companys of {m}?
+      part of: Which countries are part of {m}?
+      place of birth: Name people born in {m}.
+      place of burial: Name people buried in {m}.
+      place of death: Name people who died in {m}.
+      record label: Name artists who were under contract by {m}
+      religion: Name people who follow the {m}
+      residence: Name people who reside in {m}.
+      sibling: Who are the siblings of {m}?
+      sport: Name people who perform in {m}.
+      spouse: Who is {m} currently married to or was married to in the past?
+      time period: Name people who were active during {m}.
+      unmarried partner: "Who is or were {m}'s unmarried partners?"
+      uses: What uses {m}?
+    tail:
+      cast member: Which actors appered in the movie {m}?
+      cause of death: "What was the cause of {m}'s death?"
+      child: Who are the children of {m}?
+      continent: On which continent is {m} currently located or was located in the past?
+      country: In which country was {m} produced?
+      country of citizenship: What country is or was {m} a citizen of?
+      country of origin: What is the country of origin of {m}?
+      diplomatic relation: What countries have diplomatic relations with {m}?
+      director: Who directed the movie {m}?
+      educated at: Where did {m} receive their education?
+      employer: Who is {m} currently employed by or has been employed by in the past?
+      ethnic group: To which ethnic group does {m} belong to?
+      field of work: What field does {m} currently work in or has worked in the past?
+      founded by: Who founded {m}?
+      generic: "{m}, {r}"
+      genre: What genres does {m} belong to?
+      headquarters location: "Where is {m}'s headquarter located?"
+      industry: In which industry does {m} work?
+      influenced by: "Who has influenced {m}'s work?"
+      instrument: What instruments is {m} able to play?
+      language of work or name: What language does {m} work or operate in?
+      languages spoken, written, or signed: What languages does {m} speak, write, or sign?
+      located in the administrative terroritorial entity: What is located in the administrative terroritorial entity {m}?
+      location of formation: Where was {m} formed?
+      medical condition: What medical condition does {m} currently have or has had in the past?
+      member of: Which organizations is or was {m} a member of?
+      member of political party: Which political partys is or was {m} a member of?
+      movement: What movement is {m} currently associated with or was associated with in the past?
+      named after: Who or what is {m} named after?
+      narrative location: Where does the narrative of {m} take place?
+      occupation: Which occupations did {m} have?
+      official language: What are the current official languages of {m}?
+      parent organization: What is the parent organization of {m}?
+      part of: What is {m} a part of or was a part of in the past?
+      place of birth: What is the place of birth of {m}?
+      place of burial: Where was {m} buried?
+      place of death: Where did {m} die?
+      record label: What record labels is {m} currently associated with or has been associated with in the past?
+      religion: Which religions did {m} follow?
+      residence: Where does {m} currently reside or resided in the past?
+      sibling: Who are the siblings of {m}?
+      sport: What sport is {m} currently associated with or was associated with in the past?
+      spouse: Who is {m} currently married to or was married to in the past?
+      time period: During which time period was {m} active?
+      unmarried partner: "Who are {m}'s current unmarried partners or were {m}'s unmarried partners in the past?"
+      uses: What does {m} use?
