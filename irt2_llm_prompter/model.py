@@ -63,8 +63,11 @@ class Model:
             self.load()
             assert self.llm is not None
 
+        promptlist = list(prompts)
+        assert len(promptlist)
+
         outputs = self.llm.generate(
-            prompts=list(prompts),
+            prompts=promptlist,
             sampling_params=self.params,
         )
 
