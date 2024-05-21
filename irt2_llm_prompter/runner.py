@@ -11,56 +11,32 @@ import orjson
 import yaml
 from irt2.dataset import IRT2
 from irt2.evaluation import Predictions, evaluate
-from irt2.types import MID, RID, VID, Split
+from irt2.types import MID, RID, VID, Split, Task
 from ktz.collections import dflat, path
 
 import irt2_llm_prompter as ilp
-from irt2_llm_prompter.model import Model, Prompt
+from irt2_llm_prompter.model import Model
+from irt2_llm_prompter.prompts import Assembler
 
 Tasks = dict[tuple[MID, RID], set[VID]]
-
-
-def load_system_prompt(fpath: str | Path) -> str:
-    with path(fpath, is_file=True).open(mode="r") as fd:
-        system_prompts = orjson.loads(fd.read())["system"]
-
-        assert isinstance(system_prompts, list)
-        system_prompt = "".join(system_prompts)
-
-    return system_prompt
-
-
-def load_prompt_templates(ds: IRT2, fpath: str | Path):
-    with path(fpath, is_file=True).open(mode="r") as fd:
-        prompts = yaml.safe_load(fd)
-
-    for conf in prompts:
-        for name in conf["datasets"]:
-            if name != ds.name:
-                continue
-
-            return (
-                conf["prompts"]["tail"],
-                conf["prompts"]["head"],
-            )
-
-    assert False, f"{ds.name} not found in template"
 
 
 @dataclass
 class Config:
     # data configuration
+    dataset_path: str
     split: Literal["validation", "test"]
     task_limit: int | None
+    dataset_texts: str | None
 
     # model configuration
     model_path: str
     tensor_parallel_size: int
 
-    # meta information
-    system_prompt_path: str
-    prompt_templates_path: str
-    dataset_path: str
+    # prompt templates
+    prompt_template_path: str  # conf/prompts/template
+    prompt_system_path: str  # conf/prompts/system
+    prompt_question_path: str  # conf/prompts/question
 
     # sampling params (beam search)
     use_beam_search: bool = True
@@ -95,62 +71,24 @@ class Config:
 
 
 @dataclass
+class PromptContext:
+    task: Task
+    mention: str
+    relation: str
+    prompt: str
+
+
+@dataclass
 class Runner:
     ds: IRT2
     model: Model
+    assembler: Assembler
 
     config: Config
     out_dir: Path
     search_splits: tuple[Split, ...]
 
-    system_prompt: str
-
-    tail_tasks: Tasks
-    tail_templates: dict
-
-    head_tasks: Tasks
-    head_templates: dict
-
-    # --- prompt helper
-
-    def _prompt_assemble(
-        self,
-        lookup: dict,
-        mention: str,
-        relation: str,
-    ) -> str:
-        if relation in lookup:
-            content = lookup[relation].format(m=mention)
-
-        else:
-            self._error(f"relation {relation} not in templates - using generic")
-            content = self.tail_templates["generic"].format(mention, relation)
-
-        return f"{self.system_prompt} {content}"
-
-    def _prompt_gen(
-        self,
-        tasks: Iterable,
-        prompt_templates: dict,
-    ) -> Generator[tuple[Prompt, set[VID]], None, None]:
-        for (mid, rid), gt_vids in tasks:
-            mention = self.ds.mentions[mid]
-            relation = self.ds.relations[rid].split(":")[1]
-
-            body = self._prompt_assemble(
-                lookup=prompt_templates,
-                mention=mention,
-                relation=relation,
-            )
-
-            prompt = Prompt(
-                task=(mid, rid),
-                mention=mention,
-                relation=relation,
-                body=body,
-            )
-
-            yield prompt, gt_vids
+    tasks: dict[Literal["head", "tail"], Tasks]
 
     # --- context
 
@@ -195,7 +133,7 @@ class Runner:
 
     def _safe_parse_answer(
         self,
-        prompt: Prompt,
+        prompt: PromptContext,
         output: str,
     ) -> list[str]:
         try:
@@ -211,32 +149,59 @@ class Runner:
             print_exc(file=self._ctx_error_log)
         return []
 
+    def _prompt_gen(
+        self,
+        direction: Literal["head", "tail"],
+        tasks: Iterable,
+    ) -> Generator[tuple[PromptContext, set[VID]], None, None]:
+        for (mid, rid), gt_vids in tasks:
+            mention = self.ds.mentions[mid]
+            relation = self.ds.relations[rid]
+
+            # self._error(f"relation {relation} not in templates - using generic")
+            # content = self.tail_templates["generic"].format(mention, relation)
+
+            prompt = self.assembler.assemble(
+                direction=direction,
+                mention=mention,
+                relation=relation,
+            )
+
+            ctx = PromptContext(
+                task=(mid, rid),
+                mention=mention,
+                relation=relation,
+                prompt=prompt,
+            )
+
+            yield ctx, gt_vids
+
     def predict(
         self,
         tasks: Tasks,
-        prompt_templates: dict,
+        direction: Literal["head", "tail"],
         dry_run: bool = False,
     ) -> Predictions:
         # generator chain for batched processing
 
-        prompts = self._prompt_gen(
+        prompt_gen = self._prompt_gen(
+            direction=direction,
             tasks=islice(tasks.items(), self.config.task_limit),
-            prompt_templates=prompt_templates,
         )
 
         # ensure batched processing, however, it returns only after
         # all generation is done (TODO stream processing?)
-        prompts, gt = zip(*prompts)
+        ctxs, gt = zip(*prompt_gen)
 
         if not dry_run:
-            outputs = self.model.prompt(prompt.body for prompt in prompts)
+            outputs = self.model.prompt(ctx.body for ctx in ctxs)
         else:
-            outputs = ["" for _ in range(len(prompts))]
+            outputs = ["" for _ in range(len(ctxs))]
 
         preds = []
-        for prompt, output, gt_vids in zip(prompts, outputs, gt):
+        for ctx, output, gt_vids in zip(ctxs, outputs, gt):
             if not dry_run:
-                mentions = self._safe_parse_answer(prompt, output)
+                mentions = self._safe_parse_answer(ctx, output)
 
             else:
                 mentions = [
@@ -246,7 +211,7 @@ class Runner:
                 ]
 
             if not mentions:
-                preds.append((prompt.task, []))
+                preds.append((ctx.task, []))
                 continue
 
             # obtain vertex predictions
@@ -257,15 +222,15 @@ class Runner:
             )
 
             # assign arbitrary scores
-            preds.append((prompt.task, [(vid, 1) for vid in pr_vids]))
+            preds.append((ctx.task, [(vid, 1) for vid in pr_vids]))
 
             # --- logging
 
-            rep = {"prompt": asdict(prompt), "output": output}
+            rep = {"ctx": asdict(ctx), "output": output}
             self._ctx_model_answers.write(orjson.dumps(rep) + b"\n")
             self._trace(
                 "-" * 80,
-                "\n  -".join(f"{k}: {v}" for k, v in asdict(prompt).items()),
+                "\n  -".join(f"{k}: {v}" for k, v in asdict(ctx).items()),
                 f"model output: {output}",
                 f"parsed mentions: {', '.join(mentions)}",
                 f"proposed vertices: {', '.join(self.ds.vertices[vid] for vid in pr_vids)}",
@@ -281,24 +246,16 @@ class Runner:
         self,
         dry_run: bool = False,
     ) -> dict[Literal["head", "tail"], Predictions]:
-        self._trace("running predict() for tail tasks")
-        tail_preds = self.predict(
-            tasks=self.tail_tasks,
-            prompt_templates=self.tail_templates,
-            dry_run=dry_run,
-        )
+        result = {}
+        for direction in ("head", "tail"):
+            self._trace(f"running predict() for {direction} tasks")
+            result[direction] = self.predict(
+                tasks=self.tasks[direction],
+                direction=direction,
+                dry_run=dry_run,
+            )
 
-        self._trace("running predict() for head tasks")
-        head_preds = self.predict(
-            tasks=self.head_tasks,
-            prompt_templates=self.head_templates,
-            dry_run=dry_run,
-        )
-
-        return dict(
-            tail=tail_preds,
-            head=head_preds,
-        )
+        return result
 
 
 # formerly: test_run.py:_run_benchmark
@@ -314,40 +271,37 @@ def run(
     out = path(result_folder, create=True)
     config.save(to=out / "run-config.yaml")
 
-    tail_tasks, head_tasks = {
-        "validation": (
-            dataset.open_kgc_val_tails,
-            dataset.open_kgc_val_heads,
+    tasks: dict[str, Tasks] = {
+        "validation": dict(
+            tail=dataset.open_kgc_val_tails,
+            head=dataset.open_kgc_val_heads,
         ),
-        "test": (
-            dataset.open_kgc_test_tails,
-            dataset.open_kgc_test_heads,
+        "test": dict(
+            tail=dataset.open_kgc_test_tails,
+            head=dataset.open_kgc_test_heads,
         ),
     }[config.split]
+    assert len(tasks) == 2 and "head" in tasks and "tail" in tasks
 
     # TODO make splits dataset specific configuration
     assert "irt" in dataset.name.lower(), "blp has different search space"
     search_splits = (Split.train,)
 
-    tail_templates, head_templates = load_prompt_templates(
-        dataset,
-        config.prompt_templates_path,
-    )
-    system_prompt = load_system_prompt(
-        config.system_prompt_path,
+    assembler = Assembler.from_paths(
+        dataset_name=dataset.name,
+        template_path=config.prompt_template_path,
+        system_path=config.prompt_system_path,
+        question_path=config.prompt_question_path,
     )
 
     runner = Runner(
         ds=dataset,
         model=model,
+        assembler=assembler,
         config=config,
         out_dir=out,
         search_splits=search_splits,
-        system_prompt=system_prompt,
-        tail_tasks=tail_tasks,
-        tail_templates=tail_templates,
-        head_tasks=head_tasks,
-        head_templates=head_templates,
+        tasks=tasks,  # type: ignore
     )
 
     ilp.console.log("create predictions and evaluate")

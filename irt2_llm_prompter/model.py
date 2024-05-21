@@ -2,18 +2,9 @@ from dataclasses import dataclass
 from typing import Generator, Iterable
 
 import orjson
-from irt2.types import Task
 from vllm import LLM, SamplingParams
 
 import irt2_llm_prompter as ilp
-
-
-@dataclass
-class Prompt:
-    task: Task
-    mention: str
-    relation: str
-    body: str
 
 
 def parse_answer(

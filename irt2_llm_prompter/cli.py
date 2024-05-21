@@ -75,6 +75,12 @@ def main(quiet: bool, debug: bool):
     default=1,
 )
 @click.option(
+    "--prompt-template",
+    type=str,
+    required=True,
+    help="prompt template - see conf/prompts/template",
+)
+@click.option(
     "--system-prompt",
     type=str,
     required=True,
@@ -125,6 +131,7 @@ def run_experiment(
     split: Literal["validation", "test"],
     model: str,
     tensor_parallel_size: int,
+    prompt_template: str,
     system_prompt: str,
     question_template: str,
     dataset_config: str,
@@ -135,13 +142,19 @@ def run_experiment(
     **sampling_params,
 ):
     config = Config(
+        # dataset related
+        dataset_path=dataset_config,
         split=split,
         task_limit=limit_tasks,
+        dataset_texts=None,
+        # model related
         model_path=model,
-        prompt_templates_path=question_template,
-        system_prompt_path=system_prompt,
-        dataset_path=dataset_config,
         tensor_parallel_size=tensor_parallel_size,
+        # prompt related
+        prompt_template_path=prompt_template,
+        prompt_system_path=system_prompt,
+        prompt_question_path=question_template,
+        # sampling params
         **{
             k.replace("sampling_", ""): v
             for k, v in sampling_params.items()
