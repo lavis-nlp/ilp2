@@ -15,7 +15,7 @@ from ktz.collections import path
 from vllm import SamplingParams
 
 import irt2_llm_prompter as ilp
-from irt2_llm_prompter import model_prompter
+from irt2_llm_prompter.model import Model
 from irt2_llm_prompter.runner import Config, run
 
 os.environ["PYTHONBREAKPOINT"] = "pudb.set_trace"
@@ -169,7 +169,7 @@ def run_experiment(
         max_tokens=config.max_tokens,
     )
 
-    llm = model_prompter.Model(
+    llm = Model(
         path=str(config.model_path),
         params=sampling_params,
         tensor_parallel_size=config.tensor_parallel_size,
@@ -177,7 +177,7 @@ def run_experiment(
 
     if not dry_run:
         ilp.console.log(f"loading model from {model_path}")
-        llm.load_model()
+        llm.load()
         ilp.console.log(f"finished loading model")
 
     for name, dataset in dsgen:

@@ -1,6 +1,5 @@
 import csv
 import gzip
-import json
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from itertools import islice
@@ -12,46 +11,18 @@ import orjson
 import yaml
 from irt2.dataset import IRT2
 from irt2.evaluation import Predictions, evaluate
-from irt2.types import MID, RID, VID, Split, Task
+from irt2.types import MID, RID, VID, Split
 from ktz.collections import dflat, path
 
 import irt2_llm_prompter as ilp
-from irt2_llm_prompter.model_prompter import Model
+from irt2_llm_prompter.model import Model, Prompt
 
 Tasks = dict[tuple[MID, RID], set[VID]]
 
 
-# TODO prompt generation and vertex lookup
-# should become the task of the model, not the runner
-
-
-def parse_answer(output: str) -> list[str]:
-    # this successively extracts all json objects from a string
-
-    agg = []
-
-    # exit condition: end of string reached
-    while output:
-        # exit condition: no more {} pairs found
-        if "{" not in output or "}" not in output:
-            return agg
-
-        start, end = output.index("{"), output.index("}") + 1
-        sub, output = output[start:end], output[end:]
-
-        try:
-            agg += [s.strip().lower() for s in orjson.loads(sub)["answer"]]
-
-        # malformed json object, continue search
-        except (KeyError, json.JSONDecodeError):
-            continue
-
-    return agg
-
-
 def load_system_prompt(fpath: str | Path) -> str:
     with path(fpath, is_file=True).open(mode="r") as fd:
-        system_prompts = json.load(fd)["system"]
+        system_prompts = orjson.loads(fd.read())["system"]
 
         assert isinstance(system_prompts, list)
         system_prompt = "".join(system_prompts)
@@ -121,14 +92,6 @@ class Config:
     def __str__(self) -> str:
         sep = "\n  - "
         return "Config:" + sep + sep.join(f"{k}: {v}" for k, v in asdict(self).items())
-
-
-@dataclass
-class Prompt:
-    task: Task
-    mention: str
-    relation: str
-    body: str
 
 
 @dataclass
@@ -236,7 +199,7 @@ class Runner:
         output: str,
     ) -> list[str]:
         try:
-            return parse_answer(output)
+            return self.model.parse(output)
 
         # parse failure: log out trace and skip task
         except Exception as exc:
