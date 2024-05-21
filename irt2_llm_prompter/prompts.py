@@ -63,11 +63,9 @@ class Assembler:
 
             question = None
             for conf in yaml.safe_load(q_fd):
-                for name in conf["datasets"]:
-                    if name != dataset_name:
-                        continue
-
-                    question = conf["prompts"]
+                if dataset_name not in conf["datasets"]:
+                    continue
+                question = conf["prompts"]
 
             assert (
                 question is not None
