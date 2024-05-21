@@ -2,9 +2,10 @@ from dataclasses import dataclass
 from typing import Generator, Iterable
 
 import orjson
-import yaml
 from irt2.types import Task
 from vllm import LLM, SamplingParams
+
+import irt2_llm_prompter as ilp
 
 
 @dataclass
@@ -69,6 +70,7 @@ class Model:
         outputs = self.llm.generate(
             prompts=promptlist,
             sampling_params=self.params,
+            use_tqdm=not ilp.debug,
         )
 
         for output in outputs:

@@ -205,6 +205,9 @@ def run_experiment(
             with (out / "postmortem.txt").open(mode="w") as fd:
                 print_exc(file=fd)
 
+            if ilp.debug:
+                raise
+
 
 # ----------
 
