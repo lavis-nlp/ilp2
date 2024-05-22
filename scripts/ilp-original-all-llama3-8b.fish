@@ -5,15 +5,17 @@
 
 set argv \
     --split test \
-    --tensor-parallel-size 4 \
-    --system-prompt conf/prompts/system/sysp_generic_to_json_v8.json \
+    --tensor-parallel-size 1 \
+    --model /data/hiwi/lukas/llms/llama3/Meta-Llama-3-8B-Instruct \
+    --prompt-template conf/prompts/template/template-without-text-v1.txt \
+    --system-prompt conf/prompts/system/sysp-to-json-v1.yaml \
     --question-template conf/prompts/question/prompt-templates-all-v1.yaml \
-    --model /data/hiwi/lukas/llms/llama3/Meta-Llama-3-70B-Instruct \
-    --output-prefix all-irt-1- \
+    --output-prefix all-irt-2- \
     --sampling-use-beam-search n
 
+
 set ilp poetry run ilp run-experiment
-for filename in original original-subsampled
+for filename in original-subsampled original
 
     set dataset --dataset-config lib/irt2/conf/datasets/$filename.yaml
 
