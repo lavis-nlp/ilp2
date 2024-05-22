@@ -7,30 +7,39 @@ from vllm import LLM, SamplingParams
 import irt2_llm_prompter as ilp
 
 
+def normalize(lis: list[str]):
+    return [s.strip().lower() for s in lis]
+
+
 def parse_answer(
     output: str,
     top_k: int | None = None,
 ) -> list[str]:
-    agg = []
+    agg: list[str] = []
 
     # this successively extracts all json objects from a string
     # exit condition: end of string reached
     while output and (len(agg) < top_k if top_k is not None else True):
         # exit condition: no more {} pairs found
         if "{" not in output or "}" not in output:
-            return agg
+            return normalize(agg)
 
         start, end = output.index("{"), output.index("}") + 1
         sub, output = output[start:end], output[end:]
 
         try:
-            agg += [s.strip().lower() for s in orjson.loads(sub)["answer"]]
+            raw = orjson.loads(sub)["answer"]
+
+            if isinstance(raw, str):
+                agg.append(raw)
+            elif isinstance(raw, list):
+                agg += [str(x) for x in raw]
 
         # malformed json object, continue search
         except (KeyError, orjson.JSONDecodeError):
             continue
 
-    return agg
+    return normalize(agg)
 
 
 @dataclass
@@ -45,10 +54,14 @@ class Model:
         if self.llm is not None:
             return
 
+        ilp.console.log(f"loading model from {self.path}")
+
         self.llm = LLM(
             model=self.path,
             tensor_parallel_size=self.tensor_parallel_size,
         )
+
+        ilp.console.log(f"finished loading model")
 
     def prompt(self, prompts: Iterable[str]) -> Generator[str, None, None]:
         if self.llm is None:
@@ -69,3 +82,21 @@ class Model:
 
     def parse(self, s: str) -> list[str]:
         return parse_answer(s)
+
+    @classmethod
+    def from_config(cls, config):
+        sampling_params = SamplingParams(
+            temperature=config.temperature,
+            top_p=config.top_p,
+            use_beam_search=config.use_beam_search,
+            best_of=config.best_of,
+            max_tokens=config.max_tokens,
+            # TODO parameter
+            repetition_penalty=1.5,
+        )
+
+        return cls(
+            path=str(config.model_path),
+            params=sampling_params,
+            tensor_parallel_size=config.tensor_parallel_size,
+        )

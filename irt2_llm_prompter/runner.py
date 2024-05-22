@@ -90,6 +90,9 @@ class Runner:
 
     tasks: dict[Literal["head", "tail"], Tasks]
 
+    dry_run: bool
+    re_evaluate: bool
+
     # --- context
 
     def __enter__(self):
@@ -99,7 +102,7 @@ class Runner:
         self._ctx_error_log = (self.out_dir / "log-error.txt").open(mode="w")
         self._ctx_model_answers = gzip.open(
             filename=self.out_dir / "model-predictions.jsonl.gz",
-            mode="wb",
+            mode=("rb" if self.re_evaluate else "wb"),
         )
 
         self._trace("entered runner context")
@@ -130,6 +133,25 @@ class Runner:
             self._write(self._ctx_error_log, s)
 
     # ---
+
+    def _create_true_answer(
+        self,
+        gt_vids: set[VID],
+    ) -> list[str]:
+        vid2mids: dict[VID, set[MID]] = {}
+
+        if self.ds.name.startswith("IRT2"):
+            vid2mids |= self.ds.idmap.vid2mids[Split.train]
+
+        if self.ds.name.startswith("BLP"):
+            splits = (Split.train, Split.valid)
+            if self.config.split == "Test":
+                splits += (Split.test,)
+
+            for split in splits:
+                vid2mids |= self.ds.idmap.vid2mids[split]
+
+        return [self.ds.idmap.mid2str[mid] for vid in gt_vids for mid in vid2mids[vid]]
 
     def _safe_parse_answer(
         self,
@@ -180,7 +202,6 @@ class Runner:
         self,
         tasks: Tasks,
         direction: Literal["head", "tail"],
-        dry_run: bool = False,
     ) -> Predictions:
         # generator chain for batched processing
 
@@ -193,22 +214,31 @@ class Runner:
         # all generation is done (TODO stream processing?)
         ctxs, gt = zip(*prompt_gen)
 
-        if not dry_run:
-            outputs = self.model.prompt(ctx.body for ctx in ctxs)
+        if not self.dry_run:
+            if not self.re_evaluate:
+                outputs = self.model.prompt(ctx.prompt for ctx in ctxs)
+
+            else:
+                outputs = [
+                    orjson.loads(rep)["output"] for rep in self._ctx_model_answers
+                ]
+
         else:
-            outputs = ["" for _ in range(len(ctxs))]
+            # realise prompts here at the latest even if they behave
+            # lazily - this is done to assert that the templating works
+            outputs = [ctx.prompt for ctx in ctxs]
+            outputs = ["" for _ in outputs]
 
         preds = []
         for ctx, output, gt_vids in zip(ctxs, outputs, gt):
-            if not dry_run:
-                mentions = self._safe_parse_answer(ctx, output)
+            if not self.re_evaluate:
+                rep = {"ctx": asdict(ctx), "output": output}
+                self._ctx_model_answers.write(orjson.dumps(rep) + b"\n")  # type:ignore
 
+            if not self.dry_run:
+                mentions = self._safe_parse_answer(ctx, output)
             else:
-                mentions = [
-                    self.ds.idmap.mid2str[mid]
-                    for vid in gt_vids
-                    for mid in self.ds.idmap.vid2mids[vid]
-                ]
+                mentions = self._create_true_answer(gt_vids)
 
             if not mentions:
                 preds.append((ctx.task, []))
@@ -226,8 +256,6 @@ class Runner:
 
             # --- logging
 
-            rep = {"ctx": asdict(ctx), "output": output}
-            self._ctx_model_answers.write(orjson.dumps(rep) + b"\n")
             self._trace(
                 "-" * 80,
                 "\n  -".join(f"{k}: {v}" for k, v in asdict(ctx).items()),
@@ -242,29 +270,25 @@ class Runner:
 
         return preds
 
-    def predict_all(
-        self,
-        dry_run: bool = False,
-    ) -> dict[Literal["head", "tail"], Predictions]:
+    def predict_all(self) -> dict[Literal["head", "tail"], Predictions]:
         result = {}
         for direction in ("head", "tail"):
             self._trace(f"running predict() for {direction} tasks")
             result[direction] = self.predict(
                 tasks=self.tasks[direction],
                 direction=direction,
-                dry_run=dry_run,
             )
 
         return result
 
 
-# formerly: test_run.py:_run_benchmark
 def run(
     model: Model,
     dataset: IRT2,
     config: Config,
     result_folder: str | Path,
     dry_run: bool = False,
+    re_evaluate: bool = False,
 ) -> dict:
     ts_start = datetime.now()
 
@@ -302,11 +326,13 @@ def run(
         out_dir=out,
         search_splits=search_splits,
         tasks=tasks,  # type: ignore
+        dry_run=dry_run,
+        re_evaluate=re_evaluate,
     )
 
     ilp.console.log("create predictions and evaluate")
     with runner as runner:
-        predictions = runner.predict_all(dry_run)
+        predictions = runner.predict_all()
 
     report = evaluate(
         ds=dataset,

@@ -65,7 +65,7 @@ def main(quiet: bool, debug: bool):
 @click.option(
     "--model",
     type=str,
-    required=True,
+    required=False,
     help="directory for vllm to load a model from",
 )
 @click.option(
@@ -164,34 +164,13 @@ def run_experiment(
 
     ilp.console.print("\n", str(config), "\n")
 
+    if dry_run:
+        output_prefix += "dry-"
+
     dsgen = irt2.loader.from_config_file(
         path(dataset_config, is_file=True),
         only=datasets,
     )
-
-    if dry_run:
-        output_prefix += "dry-"
-
-    model_path = path(model)
-
-    sampling_params = SamplingParams(
-        temperature=config.temperature,
-        top_p=config.top_p,
-        use_beam_search=config.use_beam_search,
-        best_of=config.best_of,
-        max_tokens=config.max_tokens,
-    )
-
-    llm = Model(
-        path=str(config.model_path),
-        params=sampling_params,
-        tensor_parallel_size=config.tensor_parallel_size,
-    )
-
-    if not dry_run:
-        ilp.console.log(f"loading model from {model_path}")
-        llm.load()
-        ilp.console.log(f"finished loading model")
 
     for name, dataset in dsgen:
         ilp.console.log(f"running experiments for {name}: {dataset}")
@@ -199,7 +178,7 @@ def run_experiment(
 
         dirname = f"{output_prefix}{ts_start_str}"
         out = path(
-            path("data") / "experiments" / model_path.name / dirname,
+            path("data") / "experiments" / path(model).name / dirname,
             create=True,
         )
 
@@ -207,7 +186,7 @@ def run_experiment(
 
         try:
             run(
-                model=llm,
+                model=Model.from_config(config),
                 dataset=dataset,
                 config=config,
                 result_folder=out,
@@ -220,6 +199,19 @@ def run_experiment(
 
             if ilp.debug:
                 raise
+
+
+@main.command(name="re-evaluate")
+@click.argument(
+    "folder",
+    nargs=-1,
+)
+def main_reevaluate(folder: str):
+    for fpath in (path(f, is_dir=True) for f in folder):
+        ilp.console.log(f"re-evaluating {fpath}")
+
+        config = Config.load(fpath / "run-config.yaml")
+        ilp.console.print("\n", str(config), "\n")
 
 
 # ----------
