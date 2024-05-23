@@ -2,6 +2,6 @@
 
 {question}
 
-Here are some additional text which describe {mention}:
+Here are some additional text which describes {{mention}}:
 
-{text}
+{{text}}

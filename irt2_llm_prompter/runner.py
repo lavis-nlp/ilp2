@@ -96,7 +96,11 @@ class Runner:
     # --- context
 
     def __enter__(self):
-        self._ctx_error_count = 0
+        self._ctx_stats = {
+            "error_count": 0,
+            "parse_attempts": 0,
+            "parse_errors": 0,
+        }
 
         self._ctx_trace_log = (self.out_dir / "log-trace.txt").open(mode="w")
         self._ctx_error_log = (self.out_dir / "log-error.txt").open(mode="w")
@@ -109,7 +113,8 @@ class Runner:
         return self
 
     def __exit__(self, *_):
-        ilp.console.log(f"leaving runner context; {self._ctx_error_count} total errors")
+        error_count = self._ctx_stats["error_count"]
+        ilp.console.log(f"leaving runner context; {error_count} total errors")
 
         ilp.console.log(f"closing file descriptors")
         self._ctx_trace_log.close()
@@ -128,7 +133,7 @@ class Runner:
             self._write(self._ctx_trace_log, s)
 
     def _error(self, *msg: str):
-        self._ctx_error_count += 1
+        self._ctx_stats["error_count"] += 1
         for s in msg:
             self._write(self._ctx_error_log, s)
 
@@ -171,6 +176,17 @@ class Runner:
             print_exc(file=self._ctx_error_log)
         return []
 
+    def _load_model_outputs(self) -> list[str]:
+        assert False, "untested"
+        return [orjson.loads(rep)["output"] for rep in self._ctx_model_answers]
+
+    def _create_empty_outputs(self, ctxs: Iterable[PromptContext]) -> list[str]:
+        # realise prompts here at the latest even if they behave
+        # lazily - this is done to assert that the templating works
+        outputs = [ctx.prompt for ctx in ctxs]
+        outputs = ["" for _ in outputs]
+        return outputs
+
     def _prompt_gen(
         self,
         direction: Literal["head", "tail"],
@@ -185,6 +201,7 @@ class Runner:
 
             prompt = self.assembler.assemble(
                 direction=direction,
+                mid=mid,
                 mention=mention,
                 relation=relation,
             )
@@ -214,20 +231,16 @@ class Runner:
         # all generation is done (TODO stream processing?)
         ctxs, gt = zip(*prompt_gen)
 
+        # TODO messy, hard to understand structure
         if not self.dry_run:
             if not self.re_evaluate:
                 outputs = self.model.prompt(ctx.prompt for ctx in ctxs)
-
             else:
-                outputs = [
-                    orjson.loads(rep)["output"] for rep in self._ctx_model_answers
-                ]
-
+                outputs = self._load_model_outputs()
         else:
-            # realise prompts here at the latest even if they behave
-            # lazily - this is done to assert that the templating works
-            outputs = [ctx.prompt for ctx in ctxs]
-            outputs = ["" for _ in outputs]
+            outputs = self._create_empty_outputs(ctxs)
+
+        # --
 
         preds = []
         for ctx, output, gt_vids in zip(ctxs, outputs, gt):
@@ -236,7 +249,11 @@ class Runner:
                 self._ctx_model_answers.write(orjson.dumps(rep) + b"\n")  # type:ignore
 
             if not self.dry_run:
+                self._ctx_stats["parse_attempts"] += 1
                 mentions = self._safe_parse_answer(ctx, output)
+                if len(mentions) == 0:
+                    self._ctx_stats["parse_errors"] += 1
+
             else:
                 mentions = self._create_true_answer(gt_vids)
 
@@ -279,6 +296,13 @@ class Runner:
                 direction=direction,
             )
 
+        result |= {"stats": dict(self._ctx_stats)}
+
+        # ---
+
+        self._trace(result["stats"])
+        ilp.console.log("result stats:", result["stats"])
+
         return result
 
 
@@ -316,6 +340,7 @@ def run(
         template_path=config.prompt_template_path,
         system_path=config.prompt_system_path,
         question_path=config.prompt_question_path,
+        texts_path=config.dataset_texts,
     )
 
     runner = Runner(

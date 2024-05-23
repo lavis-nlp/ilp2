@@ -104,6 +104,11 @@ def main(quiet: bool, debug: bool):
     help="select keys from dataset-config",
 )
 @click.option(
+    "--texts",
+    type=str,
+    help="optional, supplemental text, make sure to select a single dataset",
+)
+@click.option(
     "--limit-tasks",
     type=int,
     required=False,
@@ -136,6 +141,7 @@ def run_experiment(
     question_template: str,
     dataset_config: str,
     datasets: tuple[str],
+    texts: str | None,
     limit_tasks: int | None,
     output_prefix: str,
     dry_run: bool = False,
@@ -146,7 +152,7 @@ def run_experiment(
         dataset_path=dataset_config,
         split=split,
         task_limit=limit_tasks,
-        dataset_texts=None,
+        dataset_texts=texts,
         # model related
         model_path=model,
         tensor_parallel_size=tensor_parallel_size,
@@ -172,6 +178,7 @@ def run_experiment(
         only=datasets,
     )
 
+    model_instance = Model.from_config(config)
     for name, dataset in dsgen:
         ilp.console.log(f"running experiments for {name}: {dataset}")
         ts_start_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -186,7 +193,7 @@ def run_experiment(
 
         try:
             run(
-                model=Model.from_config(config),
+                model=model_instance,
                 dataset=dataset,
                 config=config,
                 result_folder=out,
@@ -213,11 +220,15 @@ def main_reevaluate(folder: str):
         config = Config.load(fpath / "run-config.yaml")
         ilp.console.print("\n", str(config), "\n")
 
+        # TODO
+
 
 # ----------
 
 
 def entry():
+    # speak friend and enter
+
     try:
         main()
 
