@@ -16,7 +16,7 @@ set model_llama3_70b \
 
 # config
 
-set model $model_llama3_70b
+set model $model_llama3_8b
 set datasets irt2/tiny
 set prefix abl-irt2-tiny-2-
 

@@ -1,12 +1,7 @@
-#!/usr/bin/env fish
-
-# model performance on all datasets (both all and subsampled)
-# with the hyperparameters determined by the ilp-ablation-* scripts
-
 set argv \
     --split test \
-    --tensor-parallel-size 1 \
-    --model /data/hiwi/lukas/llms/llama3/Meta-Llama-3-8B-Instruct \
+    --tensor-parallel-size 4 \
+    --model /data/hiwi/lukas/llms/llama3/Meta-Llama-3-70B-Instruct \
     --prompt-template conf/prompts/template/template-without-text-v1.txt \
     --system-prompt conf/prompts/system/sysp-to-json-v1.yaml \
     --question-template conf/prompts/question/prompt-templates-all-v1.yaml \
