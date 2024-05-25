@@ -150,7 +150,7 @@ class Runner:
 
         if self.ds.name.startswith("BLP"):
             splits = (Split.train, Split.valid)
-            if self.config.split == "Test":
+            if self.config.split == "test":
                 splits += (Split.test,)
 
             for split in splits:
@@ -244,27 +244,29 @@ class Runner:
 
         preds = []
         for ctx, output, gt_vids in zip(ctxs, outputs, gt):
+            gt_mentions = self._create_true_answer(gt_vids)
+
             if not self.re_evaluate:
                 rep = {"ctx": asdict(ctx), "output": output}
                 self._ctx_model_answers.write(orjson.dumps(rep) + b"\n")  # type:ignore
 
             if not self.dry_run:
                 self._ctx_stats["parse_attempts"] += 1
-                mentions = self._safe_parse_answer(ctx, output)
-                if len(mentions) == 0:
+                pr_mentions = self._safe_parse_answer(ctx, output)
+                if len(pr_mentions) == 0:
                     self._ctx_stats["parse_errors"] += 1
 
             else:
-                mentions = self._create_true_answer(gt_vids)
+                pr_mentions = gt_mentions
 
-            if not mentions:
+            if not pr_mentions:
                 preds.append((ctx.task, []))
                 continue
 
             # obtain vertex predictions
             # TODO upstream; ordered result lists
             pr_vids = self.ds.find_by_mention(
-                *mentions,
+                *pr_mentions,
                 splits=self.search_splits,
             )
 
@@ -277,7 +279,8 @@ class Runner:
                 "-" * 80,
                 "\n  -".join(f"{k}: {v}" for k, v in asdict(ctx).items()),
                 f"model output: {output}",
-                f"parsed mentions: {', '.join(mentions)}",
+                f"parsed mentions: {', '.join(pr_mentions)}",
+                f"true mentions: {', '.join(gt_mentions)}",
                 f"proposed vertices: {', '.join(self.ds.vertices[vid] for vid in pr_vids)}",
                 f"true vertices: {', '.join(self.ds.vertices[vid] for vid in gt_vids)}",
                 f"{len(gt_vids & pr_vids)}/{len(gt_vids)} vids are correct",
@@ -287,7 +290,7 @@ class Runner:
 
         return preds
 
-    def predict_all(self) -> dict[Literal["head", "tail"], Predictions]:
+    def predict_all(self) -> dict:
         result = {}
         for direction in ("head", "tail"):
             self._trace(f"running predict() for {direction} tasks")
@@ -332,8 +335,14 @@ def run(
     assert len(tasks) == 2 and "head" in tasks and "tail" in tasks
 
     # TODO make splits dataset specific configuration
-    assert "irt" in dataset.name.lower(), "blp has different search space"
-    search_splits = (Split.train,)
+    if dataset.name.startswith("IRT"):
+        search_splits = (Split.train,)
+    elif dataset.name.startswith("BLP"):
+        search_splits = (Split.train, Split.valid)
+        if config.split == "test":
+            search_splits += (Split.test,)
+    else:
+        assert False
 
     assembler = Assembler.from_paths(
         dataset_name=dataset.name,
@@ -387,6 +396,7 @@ def run(
         )
 
         csv_meta += tuple(asdict(config).items())
+        csv_meta += tuple(predictions["stats"].items())
         csv_report = tuple(sorted(dflat(report, sep=" ").items()))
 
         writer = csv.writer(fd)

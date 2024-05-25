@@ -12,7 +12,6 @@ import pretty_errors
 import pudb
 import rich_click as click
 from ktz.collections import path
-from vllm import SamplingParams
 
 import irt2_llm_prompter as ilp
 from irt2_llm_prompter.model import Model
