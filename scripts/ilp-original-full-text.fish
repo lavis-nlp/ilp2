@@ -22,18 +22,18 @@ set model_llama3_70b \
 # config
 
 set model $model_llama3_8b
-set prefix original-all-
+set prefix original-all-text-
 
 set argv \
     --split test \
-    --prompt-template conf/prompts/template/template-without-text-v1.txt \
+    --prompt-template conf/prompts/template/template-with-text-v1.txt \
     --system-prompt conf/prompts/system/sysp-to-json-v1.yaml \
     --question-template conf/prompts/question/prompt-templates-all-v1.yaml \
     --output-prefix $prefix
 
 
 set ilp poetry run ilp run-experiment
-for filename in original-subsampled
+for filename in original-subsampled # original
     set dataset_config --dataset-config lib/irt2/conf/datasets/$filename.yaml
     for dataset in tiny small medium large
         $ilp $argv $dataset_config $model --datasets irt2/$dataset \

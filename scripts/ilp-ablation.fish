@@ -17,13 +17,15 @@ set model_llama3_70b \
 # config
 
 set model $model_llama3_8b
-set datasets irt2/tiny
-set prefix abl-irt2-tiny-2-
+set datasets blp/fb15k237 
+set prefix abl-blp-fb15k237-2-
 
 set prompts \
     --system-prompt conf/prompts/system/sysp-to-json-v1.yaml \
-    --question-template conf/prompts/question/prompt-templates-all-v1.yaml \
-    --prompt-template conf/prompts/template/template-without-text-v1.txt
+    # --question-template conf/prompts/question/prompt-templates-all-v1.yaml \
+    --question-template conf/prompts/question/prompt-templates-generic-v1.yaml \
+    # --prompt-template conf/prompts/template/template-without-text-v1.txt
+    --prompt-template conf/prompts/template/template-generic-v1.txt
 
 
 # --

@@ -1,0 +1,5 @@
+Your task is to complete a head, relation, tail triple. You must either fill in the head or the tail. Provide multiple answers if necessary.
+
+{system}
+
+{question}

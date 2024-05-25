@@ -1,0 +1,4 @@
+set prompts \
+    --system-prompt conf/prompts/system/sysp-to-json-v1.yaml \
+    --prompt-template conf/prompts/template/template-without-text-v1.txt \
+    --question-template conf/prompts/question/prompt-templates-all-v1.yaml
