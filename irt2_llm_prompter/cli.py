@@ -103,7 +103,12 @@ def main(quiet: bool, debug: bool):
     help="select keys from dataset-config",
 )
 @click.option(
-    "--texts",
+    "--texts-head",
+    type=str,
+    help="optional, supplemental text, make sure to select a single dataset",
+)
+@click.option(
+    "--texts-tail",
     type=str,
     help="optional, supplemental text, make sure to select a single dataset",
 )
@@ -140,7 +145,8 @@ def run_experiment(
     question_template: str,
     dataset_config: str,
     datasets: tuple[str],
-    texts: str | None,
+    texts_head: str | None,
+    texts_tail: str | None,
     limit_tasks: int | None,
     output_prefix: str,
     dry_run: bool = False,
@@ -151,7 +157,8 @@ def run_experiment(
         dataset_path=dataset_config,
         split=split,
         task_limit=limit_tasks,
-        dataset_texts=texts,
+        dataset_texts_head=texts_head,
+        dataset_texts_tail=texts_tail,
         # model related
         model_path=model,
         tensor_parallel_size=tensor_parallel_size,
@@ -169,9 +176,6 @@ def run_experiment(
 
     ilp.console.print("\n", str(config), "\n")
 
-    if dry_run:
-        output_prefix += "dry-"
-
     dsgen = irt2.loader.from_config_file(
         path(dataset_config, is_file=True),
         only=datasets,
@@ -182,9 +186,11 @@ def run_experiment(
         ilp.console.log(f"running experiments for {name}: {dataset}")
         ts_start_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
+        dirparent = path(model).name + ("-dry" if dry_run else "")
         dirname = f"{output_prefix}{ts_start_str}"
+
         out = path(
-            path("data") / "experiments" / path(model).name / dirname,
+            path("data") / "experiments" / dirparent / dirname,
             create=True,
         )
 

@@ -27,7 +27,8 @@ class Config:
     dataset_path: str
     split: Literal["validation", "test"]
     task_limit: int | None
-    dataset_texts: str | None
+    dataset_texts_head: str | None
+    dataset_texts_tail: str | None
 
     # model configuration
     model_path: str
@@ -203,6 +204,7 @@ class Runner:
                 direction=direction,
                 mid=mid,
                 mention=mention,
+                rid=rid,
                 relation=relation,
             )
 
@@ -349,7 +351,8 @@ def run(
         template_path=config.prompt_template_path,
         system_path=config.prompt_system_path,
         question_path=config.prompt_question_path,
-        texts_path=config.dataset_texts,
+        texts_head_path=config.dataset_texts_head,
+        texts_tail_path=config.dataset_texts_tail,
     )
 
     runner = Runner(
