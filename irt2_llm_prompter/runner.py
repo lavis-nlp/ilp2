@@ -46,7 +46,8 @@ class Config:
 
     # sampling params (random sampling)
     temperature: float = 0  # greedy if beam_search is False and set to 0
-    top_p: float = 1  # consider tokens until their cum. prob. reaches
+    top_p: float = 1.0  # consider tokens until their cum. prob. reaches
+    repetition_penalty: float = 1.0  # penalize new tokens if they appeared before
 
     max_tokens: int = 512
 

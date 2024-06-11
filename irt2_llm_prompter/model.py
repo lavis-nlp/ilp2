@@ -91,8 +91,7 @@ class Model:
             use_beam_search=config.use_beam_search,
             best_of=config.best_of,
             max_tokens=config.max_tokens,
-            # TODO parameter
-            repetition_penalty=1.5,
+            repetition_penalty=config.repetition_penalty,
         )
 
         return cls(

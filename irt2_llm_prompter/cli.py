@@ -136,6 +136,7 @@ def main(quiet: bool, debug: bool):
 @click.option("--sampling-early-stopping", type=bool)
 @click.option("--sampling-best-of", type=int)
 @click.option("--sampling-max-tokens", type=int)
+@click.option("--sampling-repetition-penalty", type=float)
 def run_experiment(
     split: Literal["validation", "test"],
     model: str,
