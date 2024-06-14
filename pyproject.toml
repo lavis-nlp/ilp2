@@ -11,12 +11,12 @@ ilp = "irt2_llm_prompter.cli:entry"
 [tool.poetry.dependencies]
 python = "^3.11"
 vllm = "^0.4.2"
-irt2 = {path = "lib/irt2", develop = true}
 click = "^8.1.7"
 rich-click = "^1.8.2"
 pretty-errors = "^1.2.25"
 pudb = "^2024.1"
 orjson = "^3.10.3"
+irt2 = { path = "lib/irt2", develop = true }
 
 [tool.poetry.group.dev.dependencies]
 ipython = "^8.24.0"
