@@ -1,0 +1,3 @@
+{system}
+Your task is to find objects that stand in a specific relation to a head or tail subject.
+{question}

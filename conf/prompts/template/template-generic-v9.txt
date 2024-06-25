@@ -1,0 +1,5 @@
+{system}
+Your task is to find objects that stand in a specific relation to a head or tail subject.
+I will give you the head or tail and the relation at the end of my prompt.
+Its not your task to write and find objects for new relations.
+{question}

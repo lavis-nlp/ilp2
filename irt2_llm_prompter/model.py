@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Generator, Iterable
+from typing import Generator, Iterable, Literal
 
 import orjson
 from vllm import LLM, SamplingParams
@@ -11,7 +11,7 @@ def normalize(lis: list[str]):
     return [s.strip().lower() for s in lis]
 
 
-def parse_answer(
+def parse_json_answer(
     output: str,
     top_k: int | None = None,
 ) -> list[str]:
@@ -42,10 +42,19 @@ def parse_answer(
     return normalize(agg)
 
 
+def parse_csv_answer(
+    output: str,
+    top_k: int | None = None,
+) -> list[str]:
+    agg: list[str] = output.split(",")
+    return normalize(agg)
+
+
 @dataclass
 class Model:
     path: str
     tensor_parallel_size: int
+    parser: Literal["json", "csv"]
     params: SamplingParams
 
     llm: LLM | None = None
@@ -81,7 +90,13 @@ class Model:
             yield output.outputs[0].text
 
     def parse(self, s: str) -> list[str]:
-        return parse_answer(s)
+        match self.parser:
+            case "json":
+                return parse_json_answer(s)
+            case "csv":
+                return parse_csv_answer(s)
+            case _:
+                return parse_json_answer(s)
 
     @classmethod
     def from_config(cls, config):
@@ -97,5 +112,6 @@ class Model:
         return cls(
             path=str(config.model_path),
             params=sampling_params,
+            parser=config.parser,
             tensor_parallel_size=config.tensor_parallel_size,
         )

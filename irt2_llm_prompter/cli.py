@@ -113,6 +113,14 @@ def main(quiet: bool, debug: bool):
     help="optional, supplemental text, make sure to select a single dataset",
 )
 @click.option(
+    "--parser",
+    nargs=1,
+    default="json",
+    required=False,
+    type=click.Choice(["json","csv"], case_sensitive=False),
+    help="optinal, choose parser corresponding to prompts",
+)
+@click.option(
     "--limit-tasks",
     type=int,
     required=False,
@@ -148,6 +156,7 @@ def run_experiment(
     datasets: tuple[str],
     texts_head: str | None,
     texts_tail: str | None,
+    parser: Literal["json", "csv"],
     limit_tasks: int | None,
     output_prefix: str,
     dry_run: bool = False,
@@ -163,6 +172,7 @@ def run_experiment(
         # model related
         model_path=model,
         tensor_parallel_size=tensor_parallel_size,
+        parser=parser,
         # prompt related
         prompt_template_path=prompt_template,
         prompt_system_path=system_prompt,

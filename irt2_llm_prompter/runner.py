@@ -33,6 +33,7 @@ class Config:
     # model configuration
     model_path: str
     tensor_parallel_size: int
+    parser: Literal["json", "csv"]
 
     # prompt templates
     prompt_template_path: str  # conf/prompts/template
