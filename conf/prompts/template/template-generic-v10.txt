@@ -1,0 +1,8 @@
+{system}
+Your task is to find objects that stand in a specific relation to a head or tail subject.
+For example:
+head=Trump, relation=profession -> Businessman, Television Personality, Real Estate Developer, Author, Politician, Former President of the United States
+tail=president, relation=profession -> Trump, Obama
+I will give you the head or tail and the relation at the end of my prompt.
+Its not your task to write and find objects for new relations or provide more examples.
+{question}
