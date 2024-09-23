@@ -1,0 +1,7 @@
+{system}
+
+Here is an example:
+Question: What is the occupation of Donald Trump?
+Businessman, Television Personality, Real Estate Developer, Author, Politician, Former President of the United States
+
+{question}

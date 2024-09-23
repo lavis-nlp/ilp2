@@ -1,6 +1,5 @@
 """Command line interface"""
 
-
 import os
 import sys
 from datetime import datetime
@@ -115,9 +114,9 @@ def main(quiet: bool, debug: bool):
 @click.option(
     "--parser",
     nargs=1,
-    default="json",
+    default="csv",
     required=False,
-    type=click.Choice(["json","csv"], case_sensitive=False),
+    type=click.Choice(["json", "csv"], case_sensitive=False),
     help="optinal, choose parser corresponding to prompts",
 )
 @click.option(

@@ -2,6 +2,6 @@
 Your task is to find vertices in a knowledge tree that stand in a specific relation to another vertex.
 This will either be in head or tail direction of the relation.
 For example:
-Prompt: "head, Trump, profession"
-Expected output: "Businessman, Television Personality, Real Estate Developer, Author, Politician, Former President of the United States"
+Prompt: head, Trump, profession
+Expected output:"Businessman, Television Personality, Real Estate Developer, Author, Politician, Former President of the United States"
 {question}

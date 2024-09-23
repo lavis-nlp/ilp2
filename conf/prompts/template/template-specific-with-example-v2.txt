@@ -1,0 +1,7 @@
+{system}
+
+Here is an example:
+Question: Which occupations did Donald Trump have?
+Businessman, Television Personality, Real Estate Developer, Author, Politician, Former President of the United States
+
+{question}

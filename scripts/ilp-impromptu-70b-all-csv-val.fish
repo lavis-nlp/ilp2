@@ -3,12 +3,13 @@
 set root (dirname (status -f))
 
 set -x ILP_MODEL_NAME llama3-70b
-
+set -x ILP_PARSER csv
+set -x ILP_SPLIT validation
 
 # IRT2 SPECIFIC
 
 set -x ILP_DATASETS 'irt2/*'
-for prompt_name in specific # specific-with-examples
+for prompt_name in specific #specific-with-examples 
     set -x ILP_PROMPT_NAME $prompt_name
     fish $root/ilp-exp.fish
 end
