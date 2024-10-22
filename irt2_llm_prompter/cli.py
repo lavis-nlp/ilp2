@@ -120,6 +120,18 @@ def main(quiet: bool, debug: bool):
     help="optinal, choose parser corresponding to prompts",
 )
 @click.option(
+    "--stopwords_path",
+    type=str,
+    required=False,
+    help="optional, stopword-list - see conf/stopwords",
+)
+@click.option(
+    "--remove-special-chars",
+    type=bool,
+    default=False,
+    help="optional, remove all special characters in comparison",
+)
+@click.option(
     "--limit-tasks",
     type=int,
     required=False,
@@ -155,9 +167,11 @@ def run_experiment(
     datasets: tuple[str],
     texts_head: str | None,
     texts_tail: str | None,
-    parser: Literal["json", "csv"],
+    parser: Literal["json", "csv"] | None,
+    stopwords_path: str | None,
     limit_tasks: int | None,
     output_prefix: str,
+    remove_special_chars: bool,
     dry_run: bool = False,
     **sampling_params,
 ):
@@ -172,6 +186,9 @@ def run_experiment(
         model_path=model,
         tensor_parallel_size=tensor_parallel_size,
         parser=parser,
+        # cleanup
+        stopwords_path=stopwords_path,
+        remove_special_chars=remove_special_chars,
         # prompt related
         prompt_template_path=prompt_template,
         prompt_system_path=system_prompt,

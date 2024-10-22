@@ -40,6 +40,10 @@ class Config:
     prompt_system_path: str  # conf/prompts/system
     prompt_question_path: str  # conf/prompts/question
 
+    # cleanup
+    stopwords_path: str | None  # conf/stopwords
+    remove_special_chars: str  # remove all special characters in comparison
+
     # sampling params (beam search)
     use_beam_search: bool = True
     early_stopping: bool = False  # must be False for random sampling
@@ -257,6 +261,7 @@ class Runner:
             if not self.dry_run:
                 self._ctx_stats["parse_attempts"] += 1
                 pr_mentions = self._safe_parse_answer(ctx, output)
+
                 if len(pr_mentions) == 0:
                     self._ctx_stats["parse_errors"] += 1
 

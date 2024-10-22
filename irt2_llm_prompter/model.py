@@ -96,7 +96,7 @@ class Model:
             case "csv":
                 return parse_csv_answer(s)
             case _:
-                return parse_json_answer(s)
+                return parse_csv_answer(s)
 
     @classmethod
     def from_config(cls, config):

@@ -4,7 +4,8 @@ set root (dirname (status -f))
 
 set -x ILP_MODEL_NAME llama3-70b
 set -x ILP_PARSER csv
-set -x ILP_SPLIT test
+set -x ILP_SPLIT validation
+set -x ILP_PENALITY 1.5
 
 # IRT2 SPECIFIC
 

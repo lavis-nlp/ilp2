@@ -21,6 +21,6 @@ or return
 
 set ilp poetry run ilp run-experiment # --dry-run
 for filename in original-subsampled # original
-    $ilp --split $ILP_SPLIT $prompts $prefix $model $parser $datasets \
+    $ilp --split $ILP_SPLIT --sampling-repetition-penalty $ILP_PENALITY $prompts $prefix $model $parser $datasets \
         --dataset-config "$root"/../lib/irt2/conf/datasets/$filename.yaml
 end

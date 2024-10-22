@@ -21,7 +21,7 @@ or return
 set ilp poetry run ilp run-experiment # --dry-run
 for filename in original-subsampled # original
     set dataset_config --dataset-config lib/irt2/conf/datasets/$filename.yaml
-    for dataset in fb15k237 wn18rr # wikidata5m
+    for dataset in fb15k237 wn18rr wikidata5m
         $ilp --split $ILP_SPLIT $prompts $prefix $model $dataset_config \
             --datasets blp/$dataset \
             --texts-head "data/blp/text/"$dataset"/"$ILP_TEXT_HEAD".pkl" \
