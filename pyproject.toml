@@ -17,6 +17,7 @@ pretty-errors = "^1.2.25"
 pudb = "^2024.1"
 orjson = "^3.10.3"
 irt2 = { path = "lib/irt2", develop = true }
+h5py = "^3.12.1"
 
 [tool.poetry.group.dev.dependencies]
 ipython = "^8.24.0"
