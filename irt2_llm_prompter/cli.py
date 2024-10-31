@@ -126,12 +126,6 @@ def main(quiet: bool, debug: bool):
     help="optional, stopword-list - see conf/stopwords",
 )
 @click.option(
-    "--remove-special-chars",
-    type=bool,
-    default=False,
-    help="optional, remove all special characters in comparison",
-)
-@click.option(
     "--limit-tasks",
     type=int,
     required=False,
@@ -171,7 +165,6 @@ def run_experiment(
     stopwords_path: str | None,
     limit_tasks: int | None,
     output_prefix: str,
-    remove_special_chars: bool,
     dry_run: bool = False,
     **sampling_params,
 ):
@@ -188,7 +181,6 @@ def run_experiment(
         parser=parser,
         # cleanup
         stopwords_path=stopwords_path,
-        remove_special_chars=remove_special_chars,
         # prompt related
         prompt_template_path=prompt_template,
         prompt_system_path=system_prompt,

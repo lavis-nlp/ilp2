@@ -43,7 +43,6 @@ class Config:
 
     # cleanup
     stopwords_path: str | None  # conf/stopwords
-    remove_special_chars: str  # remove all special characters in comparison
 
     # sampling params (beam search)
     use_beam_search: bool = True
