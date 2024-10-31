@@ -17,6 +17,7 @@ from ktz.collections import dflat, path
 import irt2_llm_prompter as ilp
 from irt2_llm_prompter.model import Model
 from irt2_llm_prompter.prompts import Assembler
+from irt2_llm_prompter.preprocessor import remove_stopwords
 
 Tasks = dict[tuple[MID, RID], set[VID]]
 
@@ -90,6 +91,7 @@ class Runner:
     ds: IRT2
     model: Model
     assembler: Assembler
+    transform: callable
 
     config: Config
     out_dir: Path
@@ -265,6 +267,8 @@ class Runner:
                 if len(pr_mentions) == 0:
                     self._ctx_stats["parse_errors"] += 1
 
+                pr_mentions = [self.transform(pr_mention) for pr_mention in pr_mentions]
+
             else:
                 pr_mentions = gt_mentions
 
@@ -353,6 +357,18 @@ def run(
     else:
         assert False
 
+    transform = lambda s: s
+
+    if config.stopwords_path != None:
+        with open(config.stopwords_path, "r", encoding="utf-8") as stopword_file:
+            stopwords = stopword_file.read().split(",")
+            original_transform = transform
+            transform = lambda s: remove_stopwords(original_transform(s), stopwords)
+
+    dataset.idmap.mid2str = {k: transform(v) for k, v in dataset.idmap.mid2str.items()}
+    if "str2mids" in dataset.idmap.__dict__:
+        del dataset.idmap.__dict__["str2mids"]
+
     assembler = Assembler.from_paths(
         dataset_name=dataset.name,
         template_path=config.prompt_template_path,
@@ -372,6 +388,7 @@ def run(
         tasks=tasks,  # type: ignore
         dry_run=dry_run,
         re_evaluate=re_evaluate,
+        transform=transform,
     )
 
     ilp.console.log("create predictions and evaluate")
