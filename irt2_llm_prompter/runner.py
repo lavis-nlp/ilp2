@@ -5,7 +5,7 @@ from datetime import datetime
 from itertools import islice
 from pathlib import Path
 from traceback import print_exc
-from typing import Generator, Iterable, Literal
+from typing import Generator, Iterable, Literal, Callable
 
 import orjson
 import yaml
@@ -17,7 +17,7 @@ from ktz.collections import dflat, path
 import irt2_llm_prompter as ilp
 from irt2_llm_prompter.model import Model
 from irt2_llm_prompter.prompts import Assembler
-from irt2_llm_prompter.preprocessor import remove_stopwords
+from irt2_llm_prompter.preprocessor import remove_stopwords, stemming
 
 Tasks = dict[tuple[MID, RID], set[VID]]
 
@@ -43,6 +43,7 @@ class Config:
 
     # cleanup
     stopwords_path: str | None  # conf/stopwords
+    use_stemmer: bool 
 
     # sampling params (beam search)
     use_beam_search: bool = True
@@ -90,7 +91,7 @@ class Runner:
     ds: IRT2
     model: Model
     assembler: Assembler
-    transform: callable
+    transform: Callable[[str],str]
 
     config: Config
     out_dir: Path
@@ -363,6 +364,12 @@ def run(
             stopwords = stopword_file.read().split(",")
             original_transform = transform
             transform = lambda s: remove_stopwords(original_transform(s), stopwords)
+
+    if config.use_stemmer:
+        original_transform = transform
+        transform = lambda s: stemming(original_transform(s)) 
+
+        
 
     dataset.idmap.mid2str = {k: transform(v) for k, v in dataset.idmap.mid2str.items()}
     if "str2mids" in dataset.idmap.__dict__:

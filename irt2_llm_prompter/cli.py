@@ -126,6 +126,11 @@ def main(quiet: bool, debug: bool):
     help="optional, stopword-list - see conf/stopwords",
 )
 @click.option(
+    "--use_stemmer",
+    is_flag=True,
+    help="optional, use pystemmer to stem mentions",
+)
+@click.option(
     "--limit-tasks",
     type=int,
     required=False,
@@ -163,6 +168,7 @@ def run_experiment(
     texts_tail: str | None,
     parser: Literal["json", "csv"] | None,
     stopwords_path: str | None,
+    use_stemmer: bool,
     limit_tasks: int | None,
     output_prefix: str,
     dry_run: bool = False,
@@ -181,6 +187,7 @@ def run_experiment(
         parser=parser,
         # cleanup
         stopwords_path=stopwords_path,
+        use_stemmer: use_stemmer,
         # prompt related
         prompt_template_path=prompt_template,
         prompt_system_path=system_prompt,
