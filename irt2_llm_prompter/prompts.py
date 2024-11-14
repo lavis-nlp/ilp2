@@ -76,7 +76,7 @@ class Assembler:
                 scores = self.scores_head.get((self.idx2mid.get(mid),rid))
             else:
                 scores = self.scores_tail.get((self.idx2mid.get(mid),rid))
-            top_n_scores = np.argpartition(scores,-self.n_candidates)[-self.n_candidates:]
+            top_n_scores = np.argsort(scores)[:,::-1][:,:10]
             top_n_candidates = [dataset.idmap.vid2str[vid] for vid in top_n_scores]
             candidates = "This is a list of possible candidates: "+", ".join(top_n_candidates)
 
