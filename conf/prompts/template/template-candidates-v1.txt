@@ -1,0 +1,6 @@
+{system}
+Your task is to find vertices in a knowledge tree that stand in a specific relation to another vertex.
+This will either be in head or tail direction of the relation.
+Please find answers for this vertex, relation combination:
+{question}
+{candidates}

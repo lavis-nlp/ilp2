@@ -5,7 +5,9 @@ from datetime import datetime
 from itertools import islice
 from pathlib import Path
 from traceback import print_exc
-from typing import Generator, Iterable, Literal
+from typing import Generator, Iterable, Literal, Callable
+
+import h5py
 
 import orjson
 import yaml
@@ -43,6 +45,7 @@ class Config:
 
     # cleanup
     stopwords_path: str | None  # conf/stopwords
+    n_candidates: str | None  # top n candidates given to the model
 
     # sampling params (beam search)
     use_beam_search: bool = True
@@ -90,7 +93,7 @@ class Runner:
     ds: IRT2
     model: Model
     assembler: Assembler
-    transform: callable
+    transform: Callable[[str],[str]]
 
     config: Config
     out_dir: Path
@@ -213,6 +216,7 @@ class Runner:
                 mention=mention,
                 rid=rid,
                 relation=relation,
+                dataset=self.ds,
             )
 
             ctx = PromptContext(
@@ -366,7 +370,25 @@ def run(
 
     dataset.idmap.mid2str = {k: transform(v) for k, v in dataset.idmap.mid2str.items()}
     if "str2mids" in dataset.idmap.__dict__:
-        del dataset.idmap.__dict__["str2mids"]
+        del dataset.idmap.__dict__["str2mids"]        
+
+    scores_path = next(dataset.path.glob(f"*{'scores.test.h5'}"), None)
+
+    val_mids = set.union(*dataset.open_mentions_val.values())
+    test_mids = set.union(*dataset.open_mentions_test.values())
+
+    # test leakage
+    assert not val_mids & test_mids
+    mids = val_mids | test_mids
+
+    closed_vids = {v for h, t, r in dataset.closed_triples for v in (h, t)}
+
+    offset = max(closed_vids) + 1
+
+    mid2idx = {mid: i + offset for i, mid in enumerate(mids)}
+    print(type(mid2idx))
+    idx2mid = {v: k for k, v in mid2idx.items()}
+    print(idx2mid)
 
     assembler = Assembler.from_paths(
         dataset_name=dataset.name,
@@ -375,6 +397,9 @@ def run(
         question_path=config.prompt_question_path,
         texts_head_path=config.dataset_texts_head,
         texts_tail_path=config.dataset_texts_tail,
+        scores_path=scores_path,
+        n_candidates=config.n_candidates,
+        idx2mid=idx2mid,
     )
 
     runner = Runner(

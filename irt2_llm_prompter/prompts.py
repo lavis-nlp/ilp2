@@ -4,7 +4,11 @@ from itertools import islice
 from pathlib import Path
 from typing import Literal
 
+import h5py
+import numpy as np
+
 import yaml
+from irt2.dataset import IRT2
 from irt2.types import MID, RID, VID
 from ktz.collections import path
 
@@ -21,6 +25,10 @@ class Assembler:
     system: list[str]
     question: dict[Literal["head", "tail"], dict[str, str]]
     texts: dict[Literal["head", "tail"], dict[tuple[MID, RID] | MID, list[str]]] | None
+    scores_head: dict[np.int64, np.ndarray] | None
+    scores_tail: dict[np.int64, np.ndarray] | None
+    n_candidates: int | None
+    idx2mid: dict | None
 
     def _assemble_text(
         self,
@@ -52,15 +60,30 @@ class Assembler:
         mention: str,
         rid: RID,
         relation: str,
+        dataset: IRT2,
     ) -> str:
         relation_key = relation.split(":")[1]
         question = self.question[direction][relation_key]
 
         system = " ".join(self.system)
 
+        candidates = ""
+
+        if self.n_candidates > 0 and self.scores_head is not None and self.scores_tail is not None:
+            task = (mid, rid)
+            print(task, mention, relation)
+            if direction == "head":
+                scores = self.scores_head.get((self.idx2mid.get(mid),rid))
+            else:
+                scores = self.scores_tail.get((self.idx2mid.get(mid),rid))
+            top_n_scores = np.argpartition(scores,-self.n_candidates)[-self.n_candidates:]
+            top_n_candidates = [dataset.idmap.vid2str[vid] for vid in top_n_scores]
+            candidates = "This is a list of possible candidates: "+", ".join(top_n_candidates)
+
         template = self.template.format(
             system=system,
             question=question,
+            candidates=candidates,
         )
 
         text = self._assemble_text(direction, mid, rid, n=10)
@@ -82,11 +105,15 @@ class Assembler:
         question_path: str | Path,
         texts_head_path: str | Path | None = None,
         texts_tail_path: str | Path | None = None,
+        scores_path: str | None = None,
+        n_candidates: int = 0,
+        idx2mid: dict | None = None,
     ):
         with (
             path(template_path, is_file=True).open(mode="r") as tmpl_fd,
             path(system_path, is_file=True).open(mode="r") as sys_fd,
             path(question_path, is_file=True).open(mode="r") as q_fd,
+            h5py.File(scores_path, "r") as scores_fd,
         ):
             template = tmpl_fd.read()
             system = yaml.safe_load(sys_fd)
@@ -96,6 +123,18 @@ class Assembler:
                 if dataset_name not in conf["datasets"]:
                     continue
                 question = conf["prompts"]
+
+            if scores_fd is not None:
+                head_tasks = scores_fd["head"]["tasks"]
+                head_scores = scores_fd["head"]["scores"]
+                scores_head_dict = {
+                    tuple(task): head_scores[i] for i, task in enumerate(head_tasks)
+                }
+                tail_tasks = scores_fd["tail"]["tasks"]
+                tail_scores = scores_fd["tail"]["scores"]
+                scores_tail_dict = {
+                    tuple(task): tail_scores[i] for i, task in enumerate(tail_tasks)
+                }
 
         assert question is not None, "did not find {dataset_name} in {question_path}"
 
@@ -112,4 +151,8 @@ class Assembler:
             system=system,
             question=question,
             texts=texts,
+            scores_head=scores_head_dict,
+            scores_tail=scores_tail_dict,
+            n_candidates=n_candidates,
+            idx2mid=idx2mid,
         )
