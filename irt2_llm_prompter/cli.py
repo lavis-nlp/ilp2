@@ -187,7 +187,7 @@ def run_experiment(
         parser=parser,
         # cleanup
         stopwords_path=stopwords_path,
-        use_stemmer: use_stemmer,
+        use_stemmer=use_stemmer,
         # prompt related
         prompt_template_path=prompt_template,
         prompt_system_path=system_prompt,

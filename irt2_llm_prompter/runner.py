@@ -262,12 +262,12 @@ class Runner:
 
             if not self.dry_run:
                 self._ctx_stats["parse_attempts"] += 1
-                pr_mentions = self._safe_parse_answer(ctx, output)
+                raw_pr_mentions = self._safe_parse_answer(ctx, output)
 
-                if len(pr_mentions) == 0:
+                if len(raw_pr_mentions) == 0:
                     self._ctx_stats["parse_errors"] += 1
 
-                pr_mentions = [self.transform(pr_mention) for pr_mention in pr_mentions]
+                pr_mentions = [self.transform(raw_pr_mention) for raw_pr_mention in raw_pr_mentions]
 
             else:
                 pr_mentions = gt_mentions
@@ -293,7 +293,8 @@ class Runner:
                 "\n  -".join(f"{k}: {v}" for k, v in asdict(ctx).items()),
                 f"model output: {output}",
                 f"parsed mentions: {', '.join(pr_mentions)}",
-                f"true mentions: {', '.join(gt_mentions)}",
+                f"transformed parsed mentions: {', '.join(pr_mentions)}",
+                f"transformed true mentions: {', '.join(gt_mentions)}",
                 f"proposed vertices: {', '.join(self.ds.vertices[vid] for vid in pr_vids)}",
                 f"true vertices: {', '.join(self.ds.vertices[vid] for vid in gt_vids)}",
                 f"{len(gt_vids & pr_vids)}/{len(gt_vids)} vids are correct",
