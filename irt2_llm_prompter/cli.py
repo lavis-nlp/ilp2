@@ -123,13 +123,13 @@ def main(quiet: bool, debug: bool):
     help="optinal, choose parser corresponding to prompts",
 )
 @click.option(
-    "--stopwords_path",
+    "--stopwords-path",
     type=str,
     required=False,
     help="optional, stopword-list - see conf/stopwords",
 )
 @click.option(
-    "--use_stemmer",
+    "--use-stemmer",
     is_flag=True,
     help="optional, use pystemmer to stem mentions",
 )
@@ -137,6 +137,7 @@ def main(quiet: bool, debug: bool):
     "--n-candidates",
     type=int,
     required=False,
+    default=0,
     help="optional, gives the model the top n candidates",
 )
 @click.option(
@@ -178,7 +179,7 @@ def run_experiment(
     parser: Literal["json", "csv"] | None,
     stopwords_path: str | None,
     use_stemmer: bool,
-    n_candidates: int | None,
+    n_candidates: int,
     limit_tasks: int | None,
     output_prefix: str,
     dry_run: bool = False,

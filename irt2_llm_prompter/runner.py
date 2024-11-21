@@ -43,10 +43,10 @@ class Config:
     prompt_system_path: str  # conf/prompts/system
     prompt_question_path: str  # conf/prompts/question
 
-    # cleanup
+    # preprocessing
     stopwords_path: str | None  # conf/stopwords
     use_stemmer: bool 
-    n_candidates: str | None  # top n candidates given to the model
+    n_candidates: int = 0  # top n candidates given to the model
 
     # sampling params (beam search)
     use_beam_search: bool = True
@@ -374,19 +374,11 @@ def run(
             original_transform = transform
             transform = lambda s: stemming(original_transform(s))
 
-    dataset.idmap.mid2str = {k: transform(v) for k, v in dataset.idmap.mid2str.items()}
-    if "str2mids" in dataset.idmap.__dict__:
-        del dataset.idmap.__dict__["str2mids"]        
+    #dataset.idmap.mid2str = {k: transform(v) for k, v in dataset.idmap.mid2str.items()}
+    #if "str2mids" in dataset.idmap.__dict__:
+    #    del dataset.idmap.__dict__["str2mids"]        
 
     scores_path = next(dataset.path.glob(f"*{'scores.test.h5'}"), None)
-
-    val_mids = set.union(*dataset.open_mentions_val.values())
-    test_mids = set.union(*dataset.open_mentions_test.values())
-
-    # test leakage
-    assert not val_mids & test_mids
-    mids = val_mids | test_mids
-
 
     assembler = Assembler.from_paths(
         dataset_name=dataset.name,

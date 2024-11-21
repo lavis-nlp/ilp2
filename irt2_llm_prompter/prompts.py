@@ -68,13 +68,12 @@ class Assembler:
 
         candidates = ""
 
-        if self.n_candidates != None and self.n_candidates > 0 and self.scores_head is not None and self.scores_tail is not None:
+        if self.n_candidates > 0 and self.scores_head is not None and self.scores_tail is not None:
             if direction == "head":
                 scores = self.scores_head.get((mid,rid))
             else:
                 scores = self.scores_tail.get((mid,rid))
-            print(scores)    
-            top_n_scores = np.argsort(scores)[:self.n_candidates]
+            top_n_scores = np.argsort(scores)[::-1][:self.n_candidates]
             top_n_candidates = [dataset.idmap.vid2str[vid].split(':')[1] for vid in top_n_scores]
             candidates = "This is a list of possible candidates: "+", ".join(top_n_candidates)
 
@@ -110,7 +109,6 @@ class Assembler:
             path(template_path, is_file=True).open(mode="r") as tmpl_fd,
             path(system_path, is_file=True).open(mode="r") as sys_fd,
             path(question_path, is_file=True).open(mode="r") as q_fd,
-            h5py.File(scores_path, "r") as scores_fd,
         ):
             template = tmpl_fd.read()
             system = yaml.safe_load(sys_fd)
@@ -121,17 +119,21 @@ class Assembler:
                     continue
                 question = conf["prompts"]
 
-            if scores_fd is not None:
-                head_tasks = scores_fd["head"]["tasks"]
-                head_scores = scores_fd["head"]["scores"]
-                scores_head_dict = {
-                    tuple(task): head_scores[i] for i, task in enumerate(head_tasks)
-                }
-                tail_tasks = scores_fd["tail"]["tasks"]
-                tail_scores = scores_fd["tail"]["scores"]
-                scores_tail_dict = {
-                    tuple(task): tail_scores[i] for i, task in enumerate(tail_tasks)
-                }
+            scores_head_dict = None    
+            scores_tail_dict = None
+
+            if n_candidates > 0 and scores_path != None:
+                with h5py.File(scores_path, "r") as scores_fd:
+                    head_tasks = scores_fd["head"]["tasks"]
+                    head_scores = scores_fd["head"]["scores"]
+                    scores_head_dict = {
+                        tuple(task): head_scores[i] for i, task in enumerate(head_tasks)
+                    }
+                    tail_tasks = scores_fd["tail"]["tasks"]
+                    tail_scores = scores_fd["tail"]["scores"]
+                    scores_tail_dict = {
+                        tuple(task): tail_scores[i] for i, task in enumerate(tail_tasks)
+                    }
 
         assert question is not None, "did not find {dataset_name} in {question_path}"
 
