@@ -6,6 +6,9 @@ from datetime import datetime
 from traceback import print_exc
 from typing import Literal
 
+from pathlib import Path
+import h5py
+
 import irt2.loader
 import pretty_errors
 import pudb
@@ -131,6 +134,12 @@ def main(quiet: bool, debug: bool):
     help="optional, use pystemmer to stem mentions",
 )
 @click.option(
+    "--n-candidates",
+    type=int,
+    required=False,
+    help="optional, gives the model the top n candidates",
+)
+@click.option(
     "--limit-tasks",
     type=int,
     required=False,
@@ -169,6 +178,7 @@ def run_experiment(
     parser: Literal["json", "csv"] | None,
     stopwords_path: str | None,
     use_stemmer: bool,
+    n_candidates: int | None,
     limit_tasks: int | None,
     output_prefix: str,
     dry_run: bool = False,
@@ -188,6 +198,7 @@ def run_experiment(
         # cleanup
         stopwords_path=stopwords_path,
         use_stemmer=use_stemmer,
+        n_candidates=n_candidates,
         # prompt related
         prompt_template_path=prompt_template,
         prompt_system_path=system_prompt,
