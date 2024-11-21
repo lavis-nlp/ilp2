@@ -27,8 +27,7 @@ class Assembler:
     texts: dict[Literal["head", "tail"], dict[tuple[MID, RID] | MID, list[str]]] | None
     scores_head: dict[np.int64, np.ndarray] | None
     scores_tail: dict[np.int64, np.ndarray] | None
-    n_candidates: int | None
-    idx2mid: dict | None
+    n_candidates: int
 
     def _assemble_text(
         self,
@@ -69,15 +68,14 @@ class Assembler:
 
         candidates = ""
 
-        if self.n_candidates > 0 and self.scores_head is not None and self.scores_tail is not None:
-            task = (mid, rid)
-            print(task, mention, relation)
+        if self.n_candidates != None and self.n_candidates > 0 and self.scores_head is not None and self.scores_tail is not None:
             if direction == "head":
-                scores = self.scores_head.get((self.idx2mid.get(mid),rid))
+                scores = self.scores_head.get((mid,rid))
             else:
-                scores = self.scores_tail.get((self.idx2mid.get(mid),rid))
-            top_n_scores = np.argsort(scores)[:,::-1][:,:10]
-            top_n_candidates = [dataset.idmap.vid2str[vid] for vid in top_n_scores]
+                scores = self.scores_tail.get((mid,rid))
+            print(scores)    
+            top_n_scores = np.argsort(scores)[:self.n_candidates]
+            top_n_candidates = [dataset.idmap.vid2str[vid].split(':')[1] for vid in top_n_scores]
             candidates = "This is a list of possible candidates: "+", ".join(top_n_candidates)
 
         template = self.template.format(
@@ -107,7 +105,6 @@ class Assembler:
         texts_tail_path: str | Path | None = None,
         scores_path: str | None = None,
         n_candidates: int = 0,
-        idx2mid: dict | None = None,
     ):
         with (
             path(template_path, is_file=True).open(mode="r") as tmpl_fd,
@@ -154,5 +151,4 @@ class Assembler:
             scores_head=scores_head_dict,
             scores_tail=scores_tail_dict,
             n_candidates=n_candidates,
-            idx2mid=idx2mid,
         )

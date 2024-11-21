@@ -381,14 +381,6 @@ def run(
     assert not val_mids & test_mids
     mids = val_mids | test_mids
 
-    closed_vids = {v for h, t, r in dataset.closed_triples for v in (h, t)}
-
-    offset = max(closed_vids) + 1
-
-    mid2idx = {mid: i + offset for i, mid in enumerate(mids)}
-    print(type(mid2idx))
-    idx2mid = {v: k for k, v in mid2idx.items()}
-    print(idx2mid)
 
     assembler = Assembler.from_paths(
         dataset_name=dataset.name,
@@ -399,7 +391,6 @@ def run(
         texts_tail_path=config.dataset_texts_tail,
         scores_path=scores_path,
         n_candidates=config.n_candidates,
-        idx2mid=idx2mid,
     )
 
     runner = Runner(
