@@ -94,7 +94,7 @@ class Runner:
     ds: IRT2
     model: Model
     assembler: Assembler
-    transform: Callable[[str],[str]]
+    transform: Callable[[str],str]
 
     config: Config
     out_dir: Path
@@ -370,11 +370,9 @@ def run(
             original_transform = transform
             transform = lambda s: remove_stopwords(original_transform(s), stopwords)
 
-    if config.use_stemmer:
-        original_transform = transform
-        transform = lambda s: stemming(original_transform(s)) 
-
-        
+        if config.use_stemmer:
+            original_transform = transform
+            transform = lambda s: stemming(original_transform(s))
 
     dataset.idmap.mid2str = {k: transform(v) for k, v in dataset.idmap.mid2str.items()}
     if "str2mids" in dataset.idmap.__dict__:
