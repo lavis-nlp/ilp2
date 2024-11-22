@@ -275,7 +275,10 @@ class Runner:
         }
 
         # invalidate cache
-        del self.ds.idmap.str2mids
+        try:
+            del self.ds.idmap.str2mids
+        except AttributeError:
+            ...
 
         preds = []
         for ctx, output, gt_vids in zip(ctxs, outputs, gt):
