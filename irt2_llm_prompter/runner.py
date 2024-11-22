@@ -325,6 +325,7 @@ class Runner:
                 f"model output: {output}",
                 f"parsed mentions: {', '.join(pr_mentions)}",
                 f"transformed parsed mentions: {', '.join(pr_mentions)}",
+                f"true mentions: {', '.join(gt_mentions)}",
                 f"transformed true mentions: {', '.join(gt_mentions_transformed)}",
                 f"proposed vertices: {', '.join(self.ds.vertices[vid] for vid in pr_vids)}",
                 f"true vertices: {', '.join(self.ds.vertices[vid] for vid in gt_vids)}",
