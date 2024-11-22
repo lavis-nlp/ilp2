@@ -6,7 +6,6 @@ from typing import Literal
 
 import h5py
 import numpy as np
-
 import yaml
 from irt2.dataset import IRT2
 from irt2.types import MID, RID, VID
@@ -68,14 +67,22 @@ class Assembler:
 
         candidates = ""
 
-        if self.n_candidates > 0 and self.scores_head is not None and self.scores_tail is not None:
+        if (
+            self.n_candidates > 0
+            and self.scores_head is not None
+            and self.scores_tail is not None
+        ):
             if direction == "head":
-                scores = self.scores_head.get((mid,rid))
+                scores = self.scores_head.get((mid, rid))
             else:
-                scores = self.scores_tail.get((mid,rid))
-            top_n_scores = np.argsort(scores)[::-1][:self.n_candidates]
-            top_n_candidates = [dataset.idmap.vid2str[vid].split(':')[1] for vid in top_n_scores]
-            candidates = "This is a list of possible candidates: "+", ".join(top_n_candidates)
+                scores = self.scores_tail.get((mid, rid))
+            top_n_scores = np.argsort(scores)[::-1][: self.n_candidates]
+            top_n_candidates = [
+                dataset.idmap.vid2str[vid].split(":")[1] for vid in top_n_scores
+            ]
+            candidates = "This is a list of possible candidates: " + ", ".join(
+                top_n_candidates
+            )
 
         template = self.template.format(
             system=system,
@@ -102,7 +109,7 @@ class Assembler:
         question_path: str | Path,
         texts_head_path: str | Path | None = None,
         texts_tail_path: str | Path | None = None,
-        scores_path: str | None = None,
+        scores_path: str | Path | None = None,
         n_candidates: int = 0,
     ):
         with (
@@ -119,7 +126,7 @@ class Assembler:
                     continue
                 question = conf["prompts"]
 
-            scores_head_dict = None    
+            scores_head_dict = None
             scores_tail_dict = None
 
             if n_candidates > 0 and scores_path != None:

@@ -3,12 +3,11 @@
 import os
 import sys
 from datetime import datetime
+from pathlib import Path
 from traceback import print_exc
 from typing import Literal
 
-from pathlib import Path
 import h5py
-
 import irt2.loader
 import pretty_errors
 import pudb
@@ -176,7 +175,7 @@ def run_experiment(
     datasets: tuple[str],
     texts_head: str | None,
     texts_tail: str | None,
-    parser: Literal["json", "csv"] | None,
+    parser: Literal["json", "csv"],
     stopwords_path: str | None,
     use_stemmer: bool,
     n_candidates: int,

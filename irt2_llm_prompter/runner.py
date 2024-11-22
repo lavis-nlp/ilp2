@@ -2,12 +2,12 @@ import csv
 import gzip
 from dataclasses import asdict, dataclass
 from datetime import datetime
+from functools import partial
 from itertools import islice
 from pathlib import Path
 from traceback import print_exc
 from typing import Callable, Generator, Iterable, Literal
 
-import h5py
 import orjson
 import yaml
 from irt2.dataset import IRT2
@@ -17,7 +17,7 @@ from ktz.collections import dflat, path
 
 import irt2_llm_prompter as ilp
 from irt2_llm_prompter.model import Model
-from irt2_llm_prompter.preprocessor import remove_stopwords, stemming
+from irt2_llm_prompter.preprocessor import remove_stopwords, stem
 from irt2_llm_prompter.prompts import Assembler
 
 Tasks = dict[tuple[MID, RID], set[VID]]
@@ -93,7 +93,7 @@ class Runner:
     ds: IRT2
     model: Model
     assembler: Assembler
-    transform: Callable[[str], str]
+    transformations: list[Callable[[str], str]]
 
     config: Config
     out_dir: Path
@@ -153,7 +153,8 @@ class Runner:
     def _create_true_answer(
         self,
         gt_vids: set[VID],
-    ) -> list[str]:
+        mid2str_original: dict[MID, str],
+    ) -> tuple[list[str], list[str]]:
         vid2mids: dict[VID, set[MID]] = {}
 
         if self.ds.name.startswith("IRT2"):
@@ -167,7 +168,10 @@ class Runner:
             for split in splits:
                 vid2mids |= self.ds.idmap.vid2mids[split]
 
-        return [self.ds.idmap.mid2str[mid] for vid in gt_vids for mid in vid2mids[vid]]
+        return (
+            [self.ds.idmap.mid2str[mid] for vid in gt_vids for mid in vid2mids[vid]],
+            [mid2str_original[mid] for vid in gt_vids for mid in vid2mids[vid]],
+        )
 
     def _safe_parse_answer(
         self,
@@ -228,6 +232,13 @@ class Runner:
 
             yield ctx, gt_vids
 
+    def transform(self, s: str) -> str:
+        for fn in self.transformations:
+            s = fn(s)
+        return s
+
+    # ---
+
     def predict(
         self,
         tasks: Tasks,
@@ -255,15 +266,23 @@ class Runner:
 
         # --
 
+        # save state
+        mid2str_original = self.ds.idmap.mid2str.copy()
+
+        # overwrite with transformed mentions
         self.ds.idmap.mid2str = {
             k: self.transform(v) for k, v in self.ds.idmap.mid2str.items()
         }
-        if "str2mids" in self.ds.idmap.__dict__:
-            del self.ds.idmap.__dict__["str2mids"]
+
+        # invalidate cache
+        del self.ds.idmap.str2mids
 
         preds = []
         for ctx, output, gt_vids in zip(ctxs, outputs, gt):
-            gt_mentions = self._create_true_answer(gt_vids)
+            gt_mentions_transformed, gt_mentions = self._create_true_answer(
+                gt_vids,
+                mid2str_original,
+            )
 
             if not self.re_evaluate:
                 rep = {"ctx": asdict(ctx), "output": output}
@@ -280,8 +299,9 @@ class Runner:
                     self.transform(raw_pr_mention) for raw_pr_mention in raw_pr_mentions
                 ]
 
+            # dry run: oracle
             else:
-                pr_mentions = gt_mentions
+                pr_mentions = gt_mentions_transformed
 
             if not pr_mentions:
                 preds.append((ctx.task, []))
@@ -305,13 +325,16 @@ class Runner:
                 f"model output: {output}",
                 f"parsed mentions: {', '.join(pr_mentions)}",
                 f"transformed parsed mentions: {', '.join(pr_mentions)}",
-                f"transformed true mentions: {', '.join(gt_mentions)}",
+                f"transformed true mentions: {', '.join(gt_mentions_transformed)}",
                 f"proposed vertices: {', '.join(self.ds.vertices[vid] for vid in pr_vids)}",
                 f"true vertices: {', '.join(self.ds.vertices[vid] for vid in gt_vids)}",
                 f"{len(gt_vids & pr_vids)}/{len(gt_vids)} vids are correct",
                 f"{len(pr_vids - gt_vids)} are incorrectly predicted vertices",
                 "\n",
             )
+
+        # restore state
+        self.ds.idmap.mid2str = mid2str_original
 
         return preds
 
@@ -369,17 +392,19 @@ def run(
     else:
         assert False
 
-    transform = lambda s: s
+    transformations: list[Callable[[str], str]] = []
 
     if config.stopwords_path != None:
         with open(config.stopwords_path, "r", encoding="utf-8") as stopword_file:
-            stopwords = stopword_file.read().split(",")
-            original_transform = transform
-            transform = lambda s: remove_stopwords(original_transform(s), stopwords)
+            transformations += [
+                partial(
+                    remove_stopwords,
+                    stopwords=stopword_file.read().split(","),
+                )
+            ]
 
-        if config.use_stemmer:
-            original_transform = transform
-            transform = lambda s: stemming(original_transform(s))
+    if config.use_stemmer:
+        transformations += [stem]
 
     scores_path = next(dataset.path.glob(f"*{'scores.test.h5'}"), None)
 
@@ -404,7 +429,7 @@ def run(
         tasks=tasks,  # type: ignore
         dry_run=dry_run,
         re_evaluate=re_evaluate,
-        transform=transform,
+        transformations=transformations,
     )
 
     ilp.console.log("create predictions and evaluate")
