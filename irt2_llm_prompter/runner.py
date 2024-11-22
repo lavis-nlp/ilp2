@@ -255,6 +255,10 @@ class Runner:
             outputs = self._create_empty_outputs(ctxs)
 
         # --
+        
+        self.ds.idmap.mid2str = {k: self.transform(v) for k, v in self.ds.idmap.mid2str.items()}
+        if "str2mids" in self.ds.idmap.__dict__:
+            del self.ds.idmap.__dict__["str2mids"]
 
         preds = []
         for ctx, output, gt_vids in zip(ctxs, outputs, gt):
@@ -372,11 +376,7 @@ def run(
 
         if config.use_stemmer:
             original_transform = transform
-            transform = lambda s: stemming(original_transform(s))
-
-    #dataset.idmap.mid2str = {k: transform(v) for k, v in dataset.idmap.mid2str.items()}
-    #if "str2mids" in dataset.idmap.__dict__:
-    #    del dataset.idmap.__dict__["str2mids"]        
+            transform = lambda s: stemming(original_transform(s))   
 
     scores_path = next(dataset.path.glob(f"*{'scores.test.h5'}"), None)
 
@@ -406,7 +406,7 @@ def run(
 
     ilp.console.log("create predictions and evaluate")
     with runner as runner:
-        predictions = runner.predict_all()
+        predictions = runner.predict_all()    
 
     report = evaluate(
         ds=dataset,
