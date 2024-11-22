@@ -5,10 +5,9 @@ from datetime import datetime
 from itertools import islice
 from pathlib import Path
 from traceback import print_exc
-from typing import Generator, Iterable, Literal, Callable
+from typing import Callable, Generator, Iterable, Literal
 
 import h5py
-
 import orjson
 import yaml
 from irt2.dataset import IRT2
@@ -18,8 +17,8 @@ from ktz.collections import dflat, path
 
 import irt2_llm_prompter as ilp
 from irt2_llm_prompter.model import Model
-from irt2_llm_prompter.prompts import Assembler
 from irt2_llm_prompter.preprocessor import remove_stopwords, stemming
+from irt2_llm_prompter.prompts import Assembler
 
 Tasks = dict[tuple[MID, RID], set[VID]]
 
@@ -45,7 +44,7 @@ class Config:
 
     # preprocessing
     stopwords_path: str | None  # conf/stopwords
-    use_stemmer: bool 
+    use_stemmer: bool
     n_candidates: int = 0  # top n candidates given to the model
 
     # sampling params (beam search)
@@ -94,7 +93,7 @@ class Runner:
     ds: IRT2
     model: Model
     assembler: Assembler
-    transform: Callable[[str],str]
+    transform: Callable[[str], str]
 
     config: Config
     out_dir: Path
@@ -255,8 +254,10 @@ class Runner:
             outputs = self._create_empty_outputs(ctxs)
 
         # --
-        
-        self.ds.idmap.mid2str = {k: self.transform(v) for k, v in self.ds.idmap.mid2str.items()}
+
+        self.ds.idmap.mid2str = {
+            k: self.transform(v) for k, v in self.ds.idmap.mid2str.items()
+        }
         if "str2mids" in self.ds.idmap.__dict__:
             del self.ds.idmap.__dict__["str2mids"]
 
@@ -275,7 +276,9 @@ class Runner:
                 if len(raw_pr_mentions) == 0:
                     self._ctx_stats["parse_errors"] += 1
 
-                pr_mentions = [self.transform(raw_pr_mention) for raw_pr_mention in raw_pr_mentions]
+                pr_mentions = [
+                    self.transform(raw_pr_mention) for raw_pr_mention in raw_pr_mentions
+                ]
 
             else:
                 pr_mentions = gt_mentions
@@ -376,7 +379,7 @@ def run(
 
         if config.use_stemmer:
             original_transform = transform
-            transform = lambda s: stemming(original_transform(s))   
+            transform = lambda s: stemming(original_transform(s))
 
     scores_path = next(dataset.path.glob(f"*{'scores.test.h5'}"), None)
 
@@ -406,7 +409,7 @@ def run(
 
     ilp.console.log("create predictions and evaluate")
     with runner as runner:
-        predictions = runner.predict_all()    
+        predictions = runner.predict_all()
 
     report = evaluate(
         ds=dataset,
