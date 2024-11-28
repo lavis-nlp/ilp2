@@ -270,9 +270,11 @@ class Runner:
         mid2str_original = self.ds.idmap.mid2str.copy()
 
         # overwrite with transformed mentions
-        self.ds.idmap.mid2str = {
-            k: self.transform(v) for k, v in self.ds.idmap.mid2str.items()
-        }
+        self.ds.idmap.mid2str = {}
+        for mid, s in mid2str_original.items():
+            transformed = self.transform(s)
+            if transformed != "":
+                self.ds.idmap.mid2str[mid] = transformed
 
         # invalidate cache
         try:
