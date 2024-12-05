@@ -46,6 +46,7 @@ class Config:
     stopwords_path: str | None  # conf/stopwords
     use_stemmer: bool
     n_candidates: int = 0  # top n candidates given to the model
+    mentions_per_candidate: int = 1  # mentions per candidate proposed to the model
 
     # sampling params (beam search)
     use_beam_search: bool = True
@@ -169,7 +170,7 @@ class Runner:
                 vid2mids |= self.ds.idmap.vid2mids[split]
 
         return (
-            [self.ds.idmap.mid2str[mid] for vid in gt_vids for mid in vid2mids[vid]],
+            [self.ds.idmap.mid2str[mid] for vid in gt_vids for mid in vid2mids[vid] if mid in self.ds.idmap.mid2str],
             [mid2str_original[mid] for vid in gt_vids for mid in vid2mids[vid]],
         )
 
@@ -412,7 +413,7 @@ def run(
     if config.use_stemmer:
         transformations += [stem]
 
-    scores_path = next(dataset.path.glob(f"*{'scores.test.h5'}"), None)
+    scores_path = next(dataset.path.glob(f"*scores.{config.split}.h5"), None)
 
     assembler = Assembler.from_paths(
         dataset_name=dataset.name,
@@ -423,6 +424,7 @@ def run(
         texts_tail_path=config.dataset_texts_tail,
         scores_path=scores_path,
         n_candidates=config.n_candidates,
+        mentions_per_candidate=config.mentions_per_candidate
     )
 
     runner = Runner(

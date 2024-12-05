@@ -1,0 +1,13 @@
+{system}
+
+Your task is to form triples in a knowledge graph.
+Each consists out of a head vertex, a relation and a tail vertex.
+A triple could look like this:
+obama, occupation, president
+It could also look like this:
+new york, born in, franklin roosevelt
+The direction of the relation should be obvious from the first two arguments.
+I will provide you with the first vertex and the relation, your job is to find correct candidates for the second vertex.
+If I for example ask: "shakespeare, occupation", your answer should contain playwright, poet and actor.
+Provide at least three relevant candidates for the second vertex. Rank them by relevance if possible.
+{question}

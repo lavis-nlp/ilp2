@@ -27,6 +27,7 @@ class Assembler:
     scores_head: dict[np.int64, np.ndarray] | None
     scores_tail: dict[np.int64, np.ndarray] | None
     n_candidates: int
+    mentions_per_candidate: int
 
     def _assemble_text(
         self,
@@ -72,17 +73,25 @@ class Assembler:
             and self.scores_head is not None
             and self.scores_tail is not None
         ):
+
+            task = (np.int64(mid - 3772), np.int64(rid))
+
             if direction == "head":
-                scores = self.scores_head.get((mid, rid))
+                scores = self.scores_head.get(task)
             else:
-                scores = self.scores_tail.get((mid, rid))
-            top_n_scores = np.argsort(scores)[::-1][: self.n_candidates]
-            top_n_candidates = [
-                dataset.idmap.vid2str[vid].split(":")[1] for vid in top_n_scores
+                scores = self.scores_tail.get(task)
+
+            top_n_score_vids = np.argsort(scores)[::-1][: self.n_candidates]
+
+            mids = [
+                dataset.idmap.vid2mids[vid][:self.mentions_per_candidate] for vid in top_n_score_vids
             ]
-            candidates = "This is a list of possible candidates: " + ", ".join(
-                top_n_candidates
+
+            candidates = ", ".join(
+                dataset.mid2str[mid] for mid in mids
             )
+
+            print(candidates)
 
         template = self.template.format(
             system=system,
@@ -111,6 +120,7 @@ class Assembler:
         texts_tail_path: str | Path | None = None,
         scores_path: str | Path | None = None,
         n_candidates: int = 0,
+        mentions_per_candidate: int = 1,
     ):
         with (
             path(template_path, is_file=True).open(mode="r") as tmpl_fd,
@@ -134,12 +144,14 @@ class Assembler:
                     head_tasks = scores_fd["head"]["tasks"]
                     head_scores = scores_fd["head"]["scores"]
                     scores_head_dict = {
-                        tuple(task): head_scores[i] for i, task in enumerate(head_tasks)
+                        (task[0], task[1]): head_scores[i]
+                        for i, task in enumerate(head_tasks)
                     }
                     tail_tasks = scores_fd["tail"]["tasks"]
                     tail_scores = scores_fd["tail"]["scores"]
                     scores_tail_dict = {
-                        tuple(task): tail_scores[i] for i, task in enumerate(tail_tasks)
+                        (task[0], task[1]): tail_scores[i]
+                        for i, task in enumerate(tail_tasks)
                     }
 
         assert question is not None, "did not find {dataset_name} in {question_path}"
@@ -160,4 +172,5 @@ class Assembler:
             scores_head=scores_head_dict,
             scores_tail=scores_tail_dict,
             n_candidates=n_candidates,
+            mentions_per_candidate=mentions_per_candidate,
         )

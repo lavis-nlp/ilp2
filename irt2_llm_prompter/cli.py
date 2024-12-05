@@ -140,6 +140,13 @@ def main(quiet: bool, debug: bool):
     help="optional, gives the model the top n candidates",
 )
 @click.option(
+    "--mentions-per-candidate",
+    type=int,
+    required=False,
+    default=1,
+    help="optional, amount of mentions per candidate proposed",
+)
+@click.option(
     "--limit-tasks",
     type=int,
     required=False,
@@ -179,6 +186,7 @@ def run_experiment(
     stopwords_path: str | None,
     use_stemmer: bool,
     n_candidates: int,
+    mentions_per_candidate: int,
     limit_tasks: int | None,
     output_prefix: str,
     dry_run: bool = False,
@@ -199,6 +207,7 @@ def run_experiment(
         stopwords_path=stopwords_path,
         use_stemmer=use_stemmer,
         n_candidates=n_candidates,
+        mentions_per_candidate=mentions_per_candidate,
         # prompt related
         prompt_template_path=prompt_template,
         prompt_system_path=system_prompt,
