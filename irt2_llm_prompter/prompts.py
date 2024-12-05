@@ -91,8 +91,6 @@ class Assembler:
                 dataset.mid2str[mid] for mid in mids
             )
 
-            print(candidates)
-
         template = self.template.format(
             system=system,
             question=question,
