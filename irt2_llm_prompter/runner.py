@@ -47,6 +47,7 @@ class Config:
     use_stemmer: bool
     n_candidates: int = 0  # top n candidates given to the model
     mentions_per_candidate: int = 1  # mentions per candidate proposed to the model
+    give_true_candidates: bool = False
 
     # sampling params (beam search)
     use_beam_search: bool = True
@@ -215,14 +216,30 @@ class Runner:
             # self._error(f"relation {relation} not in templates - using generic")
             # content = self.tail_templates["generic"].format(mention, relation)
 
-            prompt = self.assembler.assemble(
-                direction=direction,
-                mid=mid,
-                mention=mention,
-                rid=rid,
-                relation=relation,
-                dataset=self.ds,
-            )
+            if self.config.give_true_candidates:
+                gt_mentions_transformed, gt_mentions = self._create_true_answer(
+                    gt_vids,
+                    self.ds.idmap.mid2str,
+                )
+
+                candidates = ", ".join(gt_mentions_transformed)
+
+                prompt = self.assembler.assemble(
+                    direction=direction,
+                    mid=mid,
+                    mention=mention,
+                    rid=rid,
+                    relation=relation,
+                    candidates=candidates
+                )
+            else:
+                prompt = self.assembler.assemble(
+                    direction=direction,
+                    mid=mid,
+                    mention=mention,
+                    rid=rid,
+                    relation=relation,
+                )
 
             ctx = PromptContext(
                 task=(mid, rid),
@@ -413,16 +430,15 @@ def run(
     if config.use_stemmer:
         transformations += [stem]
 
-    scores_path = next(dataset.path.glob(f"*scores.{config.split}.h5"), None)
-
     assembler = Assembler.from_paths(
+        dataset=dataset,
+        split_str=config.split,
         dataset_name=dataset.name,
         template_path=config.prompt_template_path,
         system_path=config.prompt_system_path,
         question_path=config.prompt_question_path,
         texts_head_path=config.dataset_texts_head,
         texts_tail_path=config.dataset_texts_tail,
-        scores_path=scores_path,
         n_candidates=config.n_candidates,
         mentions_per_candidate=config.mentions_per_candidate
     )

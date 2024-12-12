@@ -1,0 +1,8 @@
+{system}
+I have an entity and a relation.
+My task is to pick the right candidates from a pool of possible answers.
+The right candidates are related in the specific way to the first entity.
+These are the possible answers:
+{candidates}
+Provide all relevant candidates for the second entity. Order them by relevance if possible.
+{question}

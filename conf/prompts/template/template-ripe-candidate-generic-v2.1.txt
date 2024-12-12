@@ -1,0 +1,15 @@
+{system}
+Your task is to generate triples for a knowledge graph, consisting of a head entity, a relation, and a tail entity.
+Given a head entity and a relation, you will provide accurate and relevant candidates for the tail entity.
+A triple could look like this:
+obama, occupation, president
+It could also look like this:
+new york, born in, franklin roosevelt
+The direction of the relation should be obvious from the first two arguments.
+I will provide you with the first entity and the relation, your job is to find correct candidates for the second entity.
+If I for example ask: "shakespeare, occupation", your answer should contain playwright, poet and actor.
+This is the candidate pool for the second entity:
+{candidates}
+Provide all candidates from the pool that stand in the specified relation to the first entity. Rank them by relevance if possible.
+Dont think of candidates on your own.
+{question}

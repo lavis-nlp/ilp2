@@ -164,6 +164,11 @@ def main(quiet: bool, debug: bool):
     is_flag=True,
     help="do not load the model but instead always answer right",
 )
+@click.option(
+    "--give-true-candidates",
+    is_flag=True,
+    help="use ground truth mentions as candidates",
+)
 @click.option("--sampling-temperature", type=float)
 @click.option("--sampling-top-p", type=float)
 @click.option("--sampling-use-beam-search", type=bool)
@@ -190,6 +195,7 @@ def run_experiment(
     limit_tasks: int | None,
     output_prefix: str,
     dry_run: bool = False,
+    give_true_candidates: bool = False,
     **sampling_params,
 ):
     config = Config(
@@ -208,6 +214,7 @@ def run_experiment(
         use_stemmer=use_stemmer,
         n_candidates=n_candidates,
         mentions_per_candidate=mentions_per_candidate,
+        give_true_candidates=give_true_candidates,
         # prompt related
         prompt_template_path=prompt_template,
         prompt_system_path=system_prompt,
