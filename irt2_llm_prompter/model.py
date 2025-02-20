@@ -70,8 +70,6 @@ class Model:
             tensor_parallel_size=self.tensor_parallel_size,
         )
 
-        
-
         ilp.console.log(f"finished loading model")
 
     def prompt(self, prompts: Iterable[str]) -> Generator[str, None, None]:
