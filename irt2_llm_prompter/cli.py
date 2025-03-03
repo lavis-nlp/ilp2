@@ -15,7 +15,7 @@ import rich_click as click
 from ktz.collections import path
 
 import irt2_llm_prompter as ilp
-from irt2_llm_prompter.model import Model
+from irt2_llm_prompter.model import ModelBase,VLLMModel
 from irt2_llm_prompter.runner import Config, run
 
 os.environ["PYTHONBREAKPOINT"] = "pudb.set_trace"
@@ -122,6 +122,20 @@ def main(quiet: bool, debug: bool):
     help="optinal, choose parser corresponding to prompts",
 )
 @click.option(
+    "--engine",
+    default="vllm",
+    required=False,
+    type=click.Choice(["huggingface", "vllm"], case_sensitive=False),
+    help="optional, choose the inference engine to use: 'huggingface' or 'vllm'.",
+)
+@click.option(
+    "--dtype",
+    type=click.Choice(["float16", "bfloat16", "float32"], case_sensitive=False),
+    default="bfloat16",
+    show_default=True,
+    help="optional, specify the dtype of the model",
+)
+@click.option(
     "--stopwords-path",
     type=str,
     required=False,
@@ -188,6 +202,8 @@ def run_experiment(
     texts_head: str | None,
     texts_tail: str | None,
     parser: Literal["json", "csv"],
+    engine: Literal["vllm", "huggingface"],
+    dtype: Literal["float16", "bfloat16", "float32"],
     stopwords_path: str | None,
     use_stemmer: bool,
     n_candidates: int,
@@ -209,6 +225,8 @@ def run_experiment(
         model_path=model,
         tensor_parallel_size=tensor_parallel_size,
         parser=parser,
+        engine=engine,
+        dtype=dtype,
         # cleanup
         stopwords_path=stopwords_path,
         use_stemmer=use_stemmer,
@@ -234,7 +252,8 @@ def run_experiment(
         only=datasets,
     )
 
-    model_instance = Model.from_config(config)
+    model_instance = ModelBase.from_config(config)
+    
     for name, dataset in dsgen:
         ilp.console.log(f"running experiments for {name}: {dataset}")
         ts_start_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")

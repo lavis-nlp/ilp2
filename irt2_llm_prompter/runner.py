@@ -16,7 +16,7 @@ from irt2.types import MID, RID, VID, Split, Task
 from ktz.collections import dflat, path
 
 import irt2_llm_prompter as ilp
-from irt2_llm_prompter.model import Model
+from irt2_llm_prompter.model import ModelBase,VLLMModel
 from irt2_llm_prompter.preprocessor import remove_stopwords, stem
 from irt2_llm_prompter.prompts import Assembler
 
@@ -36,6 +36,8 @@ class Config:
     model_path: str
     tensor_parallel_size: int
     parser: Literal["json", "csv"]
+    engine: Literal["vllm", "huggingface"]
+    dtype: Literal["float16", "bfloat16", "float32"]
 
     # prompt templates
     prompt_template_path: str  # conf/prompts/template
@@ -93,7 +95,7 @@ class PromptContext:
 @dataclass
 class Runner:
     ds: IRT2
-    model: Model
+    model: ModelBase
     assembler: Assembler
     transformations: list[Callable[[str], str]]
 
@@ -382,7 +384,7 @@ class Runner:
 
 
 def run(
-    model: Model,
+    model: ModelBase,
     dataset: IRT2,
     config: Config,
     result_folder: str | Path,

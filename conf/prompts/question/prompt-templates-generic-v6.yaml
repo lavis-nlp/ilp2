@@ -1,0 +1,260 @@
+- datasets:
+    - IRT2/CDE-L
+  prompts:
+    head:
+      cast member: Entity={mention}, Relation=cast member
+      cause of death: Entity={mention}, Relation=cause of death
+      child: Entity={mention}, Relation=child
+      continent: Entity={mention}, Relation=continent
+      country: Entity={mention}, Relation=country
+      country of citizenship: Entity={mention}, Relation=country of citizenship
+      country of origin: Entity={mention}, Relation=country of origin
+      diplomatic relation: Entity={mention}, Relation=diplomatic relation
+      director: Entity={mention}, Relation=director
+      educated at: Entity={mention}, Relation=educated at
+      employer: Entity={mention}, Relation=employer
+      ethnic group: Entity={mention}, Relation=ethnic group
+      field of work: Entity={mention}, Relation=field of work
+      founded by: Entity={mention}, Relation=founded by
+      genre: Entity={mention}, Relation=genre
+      headquarters location: Entity={mention}, Relation=headquarters location
+      industry: Entity={mention}, Relation=industry
+      influenced by: Entity={mention}, Relation=influenced by
+      instrument: Entity={mention}, Relation=instrument
+      language of work or name:
+        Entity={mention}, Relation=language of work or name
+      languages spoken, written, or signed:
+        Entity={mention}, Relation=languages spoken,
+        written, or signed
+      located in the administrative terroritorial entity:
+        Entity={mention}, Relation=located
+        in the administrative terroritorial entity
+      location of formation: Entity={mention}, Relation=location of formation
+      medical condition: Entity={mention}, Relation=medical condition
+      member of: Entity={mention}, Relation=member of
+      member of political party:
+        Entity={mention}, Relation=member of political party
+      movement: Entity={mention}, Relation=movement
+      named after: Entity={mention}, Relation=named after
+      narrative location: Entity={mention}, Relation=narrative location
+      occupation: Entity={mention}, Relation=occupation
+      official language: Entity={mention}, Relation=official language
+      parent organization: Entity={mention}, Relation=parent organization
+      part of: Entity={mention}, Relation=part of
+      place of birth: Entity={mention}, Relation=place of birth
+      place of burial: Entity={mention}, Relation=place of burial
+      place of death: Entity={mention}, Relation=place of death
+      record label: Entity={mention}, Relation=record label
+      religion: Entity={mention}, Relation=religion
+      residence: Entity={mention}, Relation=residence
+      sibling: Entity={mention}, Relation=sibling
+      sport: Entity={mention}, Relation=sport
+      spouse: Entity={mention}, Relation=spouse
+      time period: Entity={mention}, Relation=time period
+      unmarried partner: Entity={mention}, Relation=unmarried partner
+      uses: Entity={mention}, Relation=uses
+    tail:
+      cast member: Entity={mention}, Relation=cast member
+      cause of death: Entity={mention}, Relation=cause of death
+      child: Entity={mention}, Relation=child
+      continent: Entity={mention}, Relation=continent
+      country: Entity={mention}, Relation=country
+      country of citizenship: Entity={mention}, Relation=country of citizenship
+      country of origin: Entity={mention}, Relation=country of origin
+      diplomatic relation: Entity={mention}, Relation=diplomatic relation
+      director: Entity={mention}, Relation=director
+      educated at: Entity={mention}, Relation=educated at
+      employer: Entity={mention}, Relation=employer
+      ethnic group: Entity={mention}, Relation=ethnic group
+      field of work: Entity={mention}, Relation=field of work
+      founded by: Entity={mention}, Relation=founded by
+      genre: Entity={mention}, Relation=genre
+      headquarters location: Entity={mention}, Relation=headquarters location
+      industry: Entity={mention}, Relation=industry
+      influenced by: Entity={mention}, Relation=influenced by
+      instrument: Entity={mention}, Relation=instrument
+      language of work or name:
+        Entity={mention}, Relation=language of work or name
+      languages spoken, written, or signed:
+        Entity={mention}, Relation=languages spoken,
+        written, or signed
+      located in the administrative terroritorial entity:
+        Entity={mention}, Relation=located
+        in the administrative terroritorial entity
+      location of formation: Entity={mention}, Relation=location of formation
+      medical condition: Entity={mention}, Relation=medical condition
+      member of: Entity={mention}, Relation=member of
+      member of political party:
+        Entity={mention}, Relation=member of political party
+      movement: Entity={mention}, Relation=movement
+      named after: Entity={mention}, Relation=named after
+      narrative location: Entity={mention}, Relation=narrative location
+      occupation: Entity={mention}, Relation=occupation
+      official language: Entity={mention}, Relation=official language
+      parent organization: Entity={mention}, Relation=parent organization
+      part of: Entity={mention}, Relation=part of
+      place of birth: Entity={mention}, Relation=place of birth
+      place of burial: Entity={mention}, Relation=place of burial
+      place of death: Entity={mention}, Relation=place of death
+      record label: Entity={mention}, Relation=record label
+      religion: Entity={mention}, Relation=religion
+      residence: Entity={mention}, Relation=residence
+      sibling: Entity={mention}, Relation=sibling
+      sport: Entity={mention}, Relation=sport
+      spouse: Entity={mention}, Relation=spouse
+      time period: Entity={mention}, Relation=time period
+      unmarried partner: Entity={mention}, Relation=unmarried partner
+      uses: Entity={mention}, Relation=uses
+- datasets:
+    - IRT2/CDE-M
+  prompts:
+    head:
+      cast member: Entity={mention}, Relation=cast member
+      cause of death: Entity={mention}, Relation=cause of death
+      child: Entity={mention}, Relation=child
+      continent: Entity={mention}, Relation=continent
+      country: Entity={mention}, Relation=country
+      country of citizenship: Entity={mention}, Relation=country of citizenship
+      country of origin: Entity={mention}, Relation=country of origin
+      diplomatic relation: Entity={mention}, Relation=diplomatic relation
+      director: Entity={mention}, Relation=director
+      educated at: Entity={mention}, Relation=educated at
+      employer: Entity={mention}, Relation=employer
+      ethnic group: Entity={mention}, Relation=ethnic group
+      field of work: Entity={mention}, Relation=field of work
+      founded by: Entity={mention}, Relation=founded by
+      genre: Entity={mention}, Relation=genre
+      headquarters location: Entity={mention}, Relation=headquarters location
+      industry: Entity={mention}, Relation=industry
+      influenced by: Entity={mention}, Relation=influenced by
+      instrument: Entity={mention}, Relation=instrument
+      language of work or name:
+        Entity={mention}, Relation=language of work or name
+      languages spoken, written, or signed:
+        Entity={mention}, Relation=languages spoken,
+        written, or signed
+      located in the administrative terroritorial entity:
+        Entity={mention}, Relation=located
+        in the administrative terroritorial entity
+      location of formation: Entity={mention}, Relation=location of formation
+      medical condition: Entity={mention}, Relation=medical condition
+      member of: Entity={mention}, Relation=member of
+      member of political party:
+        Entity={mention}, Relation=member of political party
+      movement: Entity={mention}, Relation=movement
+      named after: Entity={mention}, Relation=named after
+      narrative location: Entity={mention}, Relation=narrative location
+      occupation: Entity={mention}, Relation=occupation
+      official language: Entity={mention}, Relation=official language
+      parent organization: Entity={mention}, Relation=parent organization
+      part of: Entity={mention}, Relation=part of
+      place of birth: Entity={mention}, Relation=place of birth
+      place of burial: Entity={mention}, Relation=place of burial
+      place of death: Entity={mention}, Relation=place of death
+      record label: Entity={mention}, Relation=record label
+      religion: Entity={mention}, Relation=religion
+      residence: Entity={mention}, Relation=residence
+      sibling: Entity={mention}, Relation=sibling
+      sport: Entity={mention}, Relation=sport
+      spouse: Entity={mention}, Relation=spouse
+      time period: Entity={mention}, Relation=time period
+      unmarried partner: Entity={mention}, Relation=unmarried partner
+      uses: Entity={mention}, Relation=uses
+    tail:
+      cast member: Entity={mention}, Relation=cast member
+      cause of death: Entity={mention}, Relation=cause of death
+      child: Entity={mention}, Relation=child
+      continent: Entity={mention}, Relation=continent
+      country: Entity={mention}, Relation=country
+      country of citizenship: Entity={mention}, Relation=country of citizenship
+      country of origin: Entity={mention}, Relation=country of origin
+      diplomatic relation: Entity={mention}, Relation=diplomatic relation
+      director: Entity={mention}, Relation=director
+      educated at: Entity={mention}, Relation=educated at
+      employer: Entity={mention}, Relation=employer
+      ethnic group: Entity={mention}, Relation=ethnic group
+      field of work: Entity={mention}, Relation=field of work
+      founded by: Entity={mention}, Relation=founded by
+      genre: Entity={mention}, Relation=genre
+      headquarters location: Entity={mention}, Relation=headquarters location
+      industry: Entity={mention}, Relation=industry
+      influenced by: Entity={mention}, Relation=influenced by
+      instrument: Entity={mention}, Relation=instrument
+      language of work or name:
+        Entity={mention}, Relation=language of work or name
+      languages spoken, written, or signed:
+        Entity={mention}, Relation=languages spoken,
+        written, or signed
+      located in the administrative terroritorial entity:
+        Entity={mention}, Relation=located
+        in the administrative terroritorial entity
+      location of formation: Entity={mention}, Relation=location of formation
+      medical condition: Entity={mention}, Relation=medical condition
+      member of: Entity={mention}, Relation=member of
+      member of political party:
+        Entity={mention}, Relation=member of political party
+      movement: Entity={mention}, Relation=movement
+      named after: Entity={mention}, Relation=named after
+      narrative location: Entity={mention}, Relation=narrative location
+      occupation: Entity={mention}, Relation=occupation
+      official language: Entity={mention}, Relation=official language
+      parent organization: Entity={mention}, Relation=parent organization
+      part of: Entity={mention}, Relation=part of
+      place of birth: Entity={mention}, Relation=place of birth
+      place of burial: Entity={mention}, Relation=place of burial
+      place of death: Entity={mention}, Relation=place of death
+      record label: Entity={mention}, Relation=record label
+      religion: Entity={mention}, Relation=religion
+      residence: Entity={mention}, Relation=residence
+      sibling: Entity={mention}, Relation=sibling
+      sport: Entity={mention}, Relation=sport
+      spouse: Entity={mention}, Relation=spouse
+      time period: Entity={mention}, Relation=time period
+      unmarried partner: Entity={mention}, Relation=unmarried partner
+      uses: Entity={mention}, Relation=uses
+- datasets:
+    - IRT2/CDE-S
+  prompts:
+    head:
+      child: Entity={mention}, Relation=child
+      continent: Entity={mention}, Relation=continent
+      country of citizenship: Entity={mention}, Relation=country of citizenship
+      country of origin: Entity={mention}, Relation=country of origin
+      employer: Entity={mention}, Relation=employer
+      headquarters location: Entity={mention}, Relation=headquarters location
+      industry: Entity={mention}, Relation=industry
+      languages spoken, written, or signed:
+        Entity={mention}, Relation=languages spoken,
+        written, or signed
+      occupation: Entity={mention}, Relation=occupation
+      place of birth: Entity={mention}, Relation=place of birth
+      place of burial: Entity={mention}, Relation=place of burial
+      religion: Entity={mention}, Relation=religion
+    tail:
+      child: Entity={mention}, Relation=child
+      continent: Entity={mention}, Relation=continent
+      country of citizenship: Entity={mention}, Relation=country of citizenship
+      country of origin: Entity={mention}, Relation=country of origin
+      employer: Entity={mention}, Relation=employer
+      headquarters location: Entity={mention}, Relation=headquarters location
+      industry: Entity={mention}, Relation=industry
+      languages spoken, written, or signed: Entity={mention}, Relation=languages spoken, written, or signed
+      occupation: Entity={mention}, Relation=occupation
+      place of birth: Entity={mention}, Relation=place of birth
+      place of burial: Entity={mention}, Relation=place of burial
+      religion: Entity={mention}, Relation=religion
+- datasets:
+    - IRT2/CDE-T
+  prompts:
+    head:
+      continent: Entity={mention}, Relation=continent
+      country of citizenship: Entity={mention}, Relation=country of citizenship
+      languages spoken, written, or signed: Entity={mention}, Relation=languages spoken, written, or signed
+      occupation: Entity={mention}, Relation=occupation,
+      place of birth: Entity={mention}, Relation=place of birth
+    tail:
+      continent: Entity={mention}, Relation=continent
+      country of citizenship: Entity={mention}, Relation=country of citizenship
+      languages spoken, written, or signed: Entity={mention}, Relation=languages spoken, written, or signed
+      occupation: Entity={mention}, Relation=occupation
+      place of birth: Entity={mention}, Relation=place of birth

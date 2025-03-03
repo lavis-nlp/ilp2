@@ -1,0 +1,10 @@
+{system}
+I have an entity and a relation.
+Your task is to pick the right candidates from a pool of possible answers.
+The right candidates are related in the specific way to the first entity.
+This is the candidate pool:
+{candidates}
+Provide all relevant candidates for the second entity as described previously.
+Order them by relevance if possible.
+Dont explain your choices.
+{question}
