@@ -3,12 +3,18 @@ from dataclasses import dataclass
 from pyexpat import model
 from typing import Generator, Iterable, Literal
 
+from click import prompt
 import orjson
 from traitlets import default
 from vllm import LLM, SamplingParams
 
-import transformers
-from transformers import Pipeline
+from transformers import (
+    Pipeline,
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    PreTrainedTokenizer,
+    PreTrainedTokenizerFast,
+)
 import torch
 
 import irt2_llm_prompter as ilp
@@ -154,65 +160,119 @@ class VLLMModel(ModelBase):
 
 class HuggingFaceModel(ModelBase):
 
-    model_kwargs: dict
-    pipeline: Pipeline | None = None
+    model_kwargs = None
+    dtype: torch.dtype
+    batch_size: int
+    model = None
+    tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast
 
     def __init__(
         self,
         path: str,
         tensor_parallel_size: int,
         parser: Literal["json", "csv"],
-        model_kwargs: dict,
+        model_kwargs,
+        dtype: torch.dtype,
+        batch_size: int,
     ):
         super().__init__(path, tensor_parallel_size, parser)
         self.model_kwargs = model_kwargs
+        self.dtype = dtype
+        self.batch_size = batch_size
 
     @classmethod
     def from_config(cls, config):
 
-        model_kwargs = {"torch_dtype": getattr(torch, config.dtype)}
+        model_kwargs = {
+            "max_new_tokens": config.max_tokens,
+            "do_sample": not config.use_beam_search,
+            "top_p": config.top_p,
+            "repetition_penalty": config.repetition_penalty,
+        }
+
+        if model_kwargs["do_sample"]:
+            model_kwargs["temperature"] = config.temperature
+        else:
+            model_kwargs["num_beams"] = config.best_of
+            model_kwargs["temperature"] = None
 
         return cls(
             path=str(config.model_path),
             tensor_parallel_size=config.tensor_parallel_size,
             parser=config.parser,
             model_kwargs=model_kwargs,
+            dtype=getattr(torch, config.dtype),
+            batch_size=config.batch_size,
         )
 
     def load(self):
 
-        if self.pipeline is not None:
+        if self.model is not None:
             return
 
         ilp.console.log(f"Loading huggingface model from {self.path}")
 
-        self.pipeline = transformers.pipeline(
-            "text-generation",
-            model=self.path,
-            model_kwargs=self.model_kwargs,
-            device_map="auto",
+        self.tokenizer = AutoTokenizer.from_pretrained(self.path, padding_side="left")
+        self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
+
+        self.model = AutoModelForCausalLM.from_pretrained(
+            self.path, torch_dtype=self.dtype, device_map="auto"
         )
 
         ilp.console.log("Finished loading huggingface model")
 
     def prompt(self, prompts: Iterable[str]) -> Generator[str, None, None]:
-        if self.pipeline is None:
+        if self.model is None:
             self.load()
-            assert self.pipeline is not None
+            assert self.model is not None
+            assert self.tokenizer is not None
+
+        terminators = [
+            self.tokenizer.eos_token_id,
+            self.tokenizer.convert_tokens_to_ids("<|eot_id|>"),
+        ]
 
         promptlist = [[{"role": "system", "content": prompt}] for prompt in prompts]
         assert len(promptlist)
 
-        outputs: list[list[dict[str, str]]] = self.pipeline(
-            promptlist,
-            max_new_tokens=256,
-        ) # type: ignore
+        prompt_batches = [
+            promptlist[i : i + self.batch_size]
+            for i in range(0, len(promptlist), self.batch_size)
+        ]
 
-        if outputs is None:
-            return
+        device = self.model.device
 
-        for output in outputs:
-            yield output[0]['generated_text'][-1]['content'] #type: ignore
+        i = 0
+        for batch in prompt_batches:
+            i += 1
+
+            print("Start batch {} of {}".format(i, len(prompt_batches)))
+
+            texts = self.tokenizer.apply_chat_template(
+                batch, add_generation_prompt=True, tokenize=False
+            )
+
+            inputs = self.tokenizer(texts, padding="longest", return_tensors="pt", add_special_tokens=False)  # type: ignore
+            inputs = {key: val.to(device) for key, val in inputs.items()}
+            temp_texts = self.tokenizer.batch_decode(
+                inputs["input_ids"], skip_special_tokens=True
+            )
+
+            gen_tokens = self.model.generate(
+                **inputs,
+                pad_token_id=self.tokenizer.eos_token_id,
+                eos_token_id=terminators,
+                **(self.model_kwargs or {}),
+            )
+
+            outputs = self.tokenizer.batch_decode(gen_tokens, skip_special_tokens=True)
+            gen_texts = [i[len(temp_texts[idx]) :] for idx, i in enumerate(outputs)]
+
+            if gen_texts is None:
+                return
+
+            for output in gen_texts:
+                yield output
 
 
 # @dataclass

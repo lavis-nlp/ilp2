@@ -16,7 +16,7 @@ from irt2.types import MID, RID, VID, Split, Task
 from ktz.collections import dflat, path
 
 import irt2_llm_prompter as ilp
-from irt2_llm_prompter.model import ModelBase,VLLMModel
+from irt2_llm_prompter.model import ModelBase, VLLMModel
 from irt2_llm_prompter.preprocessor import remove_stopwords, stem
 from irt2_llm_prompter.prompts import Assembler
 
@@ -62,6 +62,7 @@ class Config:
     repetition_penalty: float = 1.0  # penalize new tokens if they appeared before
 
     max_tokens: int = 512
+    batch_size: int = 100
 
     # --- persistence
 
@@ -173,7 +174,12 @@ class Runner:
                 vid2mids |= self.ds.idmap.vid2mids[split]
 
         return (
-            [self.ds.idmap.mid2str[mid] for vid in gt_vids for mid in vid2mids[vid] if mid in self.ds.idmap.mid2str],
+            [
+                self.ds.idmap.mid2str[mid]
+                for vid in gt_vids
+                for mid in vid2mids[vid]
+                if mid in self.ds.idmap.mid2str
+            ],
             [mid2str_original[mid] for vid in gt_vids for mid in vid2mids[vid]],
         )
 
@@ -232,7 +238,7 @@ class Runner:
                     mention=mention,
                     rid=rid,
                     relation=relation,
-                    candidates=candidates
+                    candidates=candidates,
                 )
             else:
                 prompt = self.assembler.assemble(
@@ -442,7 +448,7 @@ def run(
         texts_head_path=config.dataset_texts_head,
         texts_tail_path=config.dataset_texts_tail,
         n_candidates=config.n_candidates,
-        mentions_per_candidate=config.mentions_per_candidate
+        mentions_per_candidate=config.mentions_per_candidate,
     )
 
     runner = Runner(

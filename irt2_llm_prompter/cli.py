@@ -15,7 +15,7 @@ import rich_click as click
 from ktz.collections import path
 
 import irt2_llm_prompter as ilp
-from irt2_llm_prompter.model import ModelBase,VLLMModel
+from irt2_llm_prompter.model import ModelBase, VLLMModel
 from irt2_llm_prompter.runner import Config, run
 
 os.environ["PYTHONBREAKPOINT"] = "pudb.set_trace"
@@ -129,6 +129,13 @@ def main(quiet: bool, debug: bool):
     help="optional, choose the inference engine to use: 'huggingface' or 'vllm'.",
 )
 @click.option(
+    "--batch-size",
+    default=100,
+    required=False,
+    type=int,
+    help="optional, set batch size for huggingface engine",
+)
+@click.option(
     "--dtype",
     type=click.Choice(["float16", "bfloat16", "float32"], case_sensitive=False),
     default="bfloat16",
@@ -203,6 +210,7 @@ def run_experiment(
     texts_tail: str | None,
     parser: Literal["json", "csv"],
     engine: Literal["vllm", "huggingface"],
+    batch_size: int,
     dtype: Literal["float16", "bfloat16", "float32"],
     stopwords_path: str | None,
     use_stemmer: bool,
@@ -226,6 +234,7 @@ def run_experiment(
         tensor_parallel_size=tensor_parallel_size,
         parser=parser,
         engine=engine,
+        batch_size=batch_size,
         dtype=dtype,
         # cleanup
         stopwords_path=stopwords_path,
@@ -253,7 +262,7 @@ def run_experiment(
     )
 
     model_instance = ModelBase.from_config(config)
-    
+
     for name, dataset in dsgen:
         ilp.console.log(f"running experiments for {name}: {dataset}")
         ts_start_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
