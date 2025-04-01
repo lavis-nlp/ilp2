@@ -57,6 +57,12 @@ def main(quiet: bool, debug: bool):
 
 @main.command(name="run-experiment")
 @click.option(
+    "--mode",
+    type=click.Choice(["default","prompt-re-ranking","full-re-ranking", "ranker-results"], case_sensitive=False),
+    required=True,
+    help="mode in which outputs are processed, use mode specific prompts"
+)
+@click.option(
     "--split",
     type=click.Choice(["validation", "test"]),
     required=True,
@@ -190,6 +196,11 @@ def main(quiet: bool, debug: bool):
     is_flag=True,
     help="use ground truth mentions as candidates",
 )
+@click.option(
+    "--include-vertex-name",
+    is_flag=True,
+    help="includes the vertex name in prompt-re-ranking-candidates"
+)
 @click.option("--sampling-temperature", type=float)
 @click.option("--sampling-top-p", type=float)
 @click.option("--sampling-use-beam-search", type=bool)
@@ -199,6 +210,7 @@ def main(quiet: bool, debug: bool):
 @click.option("--sampling-repetition-penalty", type=float)
 def run_experiment(
     split: Literal["validation", "test"],
+    mode: Literal["default","prompt-re-ranking","full-re-ranking", "ranker-results"],
     model: str,
     tensor_parallel_size: int,
     prompt_template: str,
@@ -220,9 +232,12 @@ def run_experiment(
     output_prefix: str,
     dry_run: bool = False,
     give_true_candidates: bool = False,
+    include_vertex_name: bool = False,
     **sampling_params,
 ):
     config = Config(
+        # mode related
+        mode=mode,
         # dataset related
         dataset_path=dataset_config,
         split=split,
@@ -239,9 +254,11 @@ def run_experiment(
         # cleanup
         stopwords_path=stopwords_path,
         use_stemmer=use_stemmer,
+        # candidates
         n_candidates=n_candidates,
         mentions_per_candidate=mentions_per_candidate,
         give_true_candidates=give_true_candidates,
+        include_vertex_name=include_vertex_name,
         # prompt related
         prompt_template_path=prompt_template,
         prompt_system_path=system_prompt,

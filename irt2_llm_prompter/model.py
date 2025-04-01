@@ -3,13 +3,14 @@ from dataclasses import dataclass
 from pyexpat import model
 from typing import Generator, Iterable, Literal
 
+import re
+
 from click import prompt
 import orjson
 from traitlets import default
 from vllm import LLM, SamplingParams
 
 from transformers import (
-    Pipeline,
     AutoModelForCausalLM,
     AutoTokenizer,
     PreTrainedTokenizer,
@@ -59,6 +60,9 @@ def parse_csv_answer(
     output: str,
     top_k: int | None = None,
 ) -> list[str]:
+    if output.count(":") == 1:
+        output = output.split(":")[1]
+    # agg: list[str] = re.split(r"[,:]", output)
     agg: list[str] = output.split(",")
     return normalize(agg)
 

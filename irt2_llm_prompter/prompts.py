@@ -23,6 +23,7 @@ from typing import Literal
 @dataclass
 class Assembler:
     dataset: IRT2
+    mode: Literal["default","prompt-re-ranking","full-re-ranking", "ranker-results"]
     split: Split
     template: str
     system: list[str]
@@ -33,6 +34,7 @@ class Assembler:
     n_candidates: int
     mid2idx: dict[int, int] | None
     mentions_per_candidate: int
+    include_vertex_name: bool
 
     def _assemble_text(
         self,
@@ -57,33 +59,14 @@ class Assembler:
 
         return " ".join(s.replace("\n", "") for s in islice(text_lis, n))
 
-    def get_candidates(
+    def _get_n_mids_per_candidate(
             self,
             direction: Literal["head", "tail"],
             mid: MID,
             rid: RID,
-    ) -> str:
-        
-        assert self.mid2idx is not None
-        assert self.scores_head is not None
-        assert self.scores_tail is not None
+    ) -> list[set[MID]]:
 
-        idx = self.mid2idx.get(mid)
-        
-        if idx is None:
-            return ""
-        
-        task: tuple[int,int] = (idx, rid)
-
-        if direction == "head":
-            scores = self.scores_head.get(task)
-        else:
-            scores = self.scores_tail.get(task)
-
-        if scores is None:
-            return ""
-
-        top_n_score_vids = np.argsort(scores)[::-1][: self.n_candidates]
+        top_n_score_vids = self.get_top_n_vids(direction=direction, task=(mid,rid))
 
         mid_sets = []
     
@@ -94,10 +77,34 @@ class Assembler:
                 assert mid_set is not None
             mid_sets.append(mid_set)
 
-        return ", ".join(
-            self.dataset.idmap.mid2str[mid] for mid_set in mid_sets for mid in list(mid_set)[:self.mentions_per_candidate] 
-        )
+        return mid_sets
+    
+    def get_top_n_vids(self, direction: Literal["head", "tail"], task: tuple[MID,RID]) -> list[int]:
+
+        assert self.mid2idx is not None
+
+        idx = self.mid2idx.get(task[0])
         
+        if idx is None:
+            return []
+
+        scores = self._get_scores_for_direction(direction=direction,task=(idx,task[1]))
+
+        if scores is None:
+            return []
+
+        return list(np.argsort(scores)[::-1][:self.n_candidates])
+        
+    def _get_scores_for_direction(self, direction: Literal["head", "tail"], task: tuple[int,int]):
+
+        assert self.scores_head is not None
+        assert self.scores_tail is not None
+
+        if direction == "head":
+            return self.scores_head.get(task)
+        else:
+            return self.scores_tail.get(task)
+    
 
     def assemble(
         self,
@@ -116,8 +123,30 @@ class Assembler:
         if (
             self.n_candidates > 0 and candidates == ""
         ):
-            candidates = self.get_candidates(direction,mid,rid)
+            mid_sets = self._get_n_mids_per_candidate(direction,mid,rid)
 
+            if self.mode == "default":
+                candidates = ", ".join(
+                    self.dataset.idmap.mid2str[mid] for mid_set in mid_sets for mid in list(mid_set)[:self.mentions_per_candidate]
+                )
+            else:
+
+                if self.include_vertex_name:
+                    top_n_vids = self.get_top_n_vids(direction=direction,task=(mid,rid))
+                    top_n_entity_names: list[str] = [self.dataset.idmap.vid2str[vid].split(":")[1] for vid in top_n_vids]
+
+                    candidates  = "\n".join(
+                        f"{i}: {top_n_entity_names[i]}, {', '.join(self.dataset.idmap.mid2str[mid] for mid in list(mid_set)[:self.mentions_per_candidate])}"
+                        for i, mid_set in enumerate(mid_sets)
+                    )
+                else:
+                    candidates  = "\n".join(
+                        f"{i}: {', '.join(self.dataset.idmap.mid2str[mid] for mid in list(mid_set)[:self.mentions_per_candidate])}"
+                        for i, mid_set in enumerate(mid_sets)
+                    )
+
+                candidates.replace(",\n","\n")
+                
         template = self.template.format(
             system=system,
             question=question,
@@ -139,6 +168,7 @@ class Assembler:
         cls,
         dataset_name: str,
         dataset: IRT2,
+        mode: Literal["default","prompt-re-ranking","full-re-ranking", "ranker-results"],
         split_str: str,
         template_path: str | Path,
         system_path: str | Path,
@@ -147,6 +177,7 @@ class Assembler:
         texts_tail_path: str | Path | None = None,
         n_candidates: int = 0,
         mentions_per_candidate: int = 1,
+        include_vertex_name: bool = False
     ):
         with (
             path(template_path, is_file=True).open(mode="r") as tmpl_fd,
@@ -206,6 +237,7 @@ class Assembler:
 
         return cls(
             dataset=dataset,
+            mode=mode,
             split=split,
             template=template,
             system=system,
@@ -216,4 +248,5 @@ class Assembler:
             n_candidates=n_candidates,
             mid2idx=mid2idx,
             mentions_per_candidate=mentions_per_candidate,
+            include_vertex_name=include_vertex_name,
         )

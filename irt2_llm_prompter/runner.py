@@ -1,18 +1,20 @@
 import csv
+from curses.ascii import isdigit
 import gzip
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from functools import partial
 from itertools import islice
 from pathlib import Path
+from shutil import which
 from traceback import print_exc
 from typing import Callable, Generator, Iterable, Literal
 
 import orjson
 import yaml
 from irt2.dataset import IRT2
-from irt2.evaluation import Predictions, evaluate
-from irt2.types import MID, RID, VID, Split, Task
+from irt2.evaluation import Predictions, Scores, evaluate
+from irt2.types import MID, RID, VID, IDMap, Split, Task
 from ktz.collections import dflat, path
 
 import irt2_llm_prompter as ilp
@@ -25,6 +27,8 @@ Tasks = dict[tuple[MID, RID], set[VID]]
 
 @dataclass
 class Config:
+    # mode configuration
+    mode: Literal["default", "prompt-re-ranking", "full-re-ranking", "ranker-results"]
     # data configuration
     dataset_path: str
     split: Literal["validation", "test"]
@@ -47,9 +51,13 @@ class Config:
     # preprocessing
     stopwords_path: str | None  # conf/stopwords
     use_stemmer: bool
+
+    # candidates
     n_candidates: int = 0  # top n candidates given to the model
     mentions_per_candidate: int = 1  # mentions per candidate proposed to the model
     give_true_candidates: bool = False
+    include_vertex_name: bool = False
+    use_ranker_results:bool = False
 
     # sampling params (beam search)
     use_beam_search: bool = True
@@ -259,6 +267,8 @@ class Runner:
             yield ctx, gt_vids
 
     def transform(self, s: str) -> str:
+        if s.isdigit():
+            return s
         for fn in self.transformations:
             s = fn(s)
         return s
@@ -282,7 +292,7 @@ class Runner:
         ctxs, gt = zip(*prompt_gen)
 
         # TODO messy, hard to understand structure
-        if not self.dry_run:
+        if not self.dry_run and self.config.mode != "ranker-results":
             if not self.re_evaluate:
                 outputs = self.model.prompt(ctx.prompt for ctx in ctxs)
             else:
@@ -308,6 +318,11 @@ class Runner:
         except AttributeError:
             ...
 
+        name2vid: dict[str, VID] = {
+            self.transform(self.ds.idmap.vid2str[vid].split(":")[1]): vid
+            for vid in self.ds.closed_vertices
+        }
+
         preds = []
         for ctx, output, gt_vids in zip(ctxs, outputs, gt):
             gt_mentions_transformed, gt_mentions = self._create_true_answer(
@@ -319,34 +334,178 @@ class Runner:
                 rep = {"ctx": asdict(ctx), "output": output}
                 self._ctx_model_answers.write(orjson.dumps(rep) + b"\n")  # type:ignore
 
-            if not self.dry_run:
+            if self.config.mode == "ranker-results":
+                raw_pr_vids: set[VID] = set()
+                scored_pr_vids: set[(tuple[VID, int])] = set()
+
+                top_n_vids = self.assembler.get_top_n_vids(
+                        direction=direction, task=ctx.task
+                )
+
+                score = self.config.n_candidates
+                for vid in top_n_vids:
+                    raw_pr_vids.add(vid)
+                    scored_pr_vids.add((vid,score))
+                    score -= 1
+
+                preds.append((ctx.task, [pair for pair in scored_pr_vids]))
+
+                continue
+
+            # dry run: oracle
+            if self.dry_run:
+                pr_mentions = gt_mentions_transformed
+
+            else:
                 self._ctx_stats["parse_attempts"] += 1
                 raw_pr_mentions = self._safe_parse_answer(ctx, output)
 
                 if len(raw_pr_mentions) == 0:
                     self._ctx_stats["parse_errors"] += 1
 
-                pr_mentions = [
-                    self.transform(raw_pr_mention) for raw_pr_mention in raw_pr_mentions
-                ]
+                match self.config.mode:
+                    case "default":
+                        pr_mentions = [
+                            self.transform(raw_pr_mention)
+                            for raw_pr_mention in raw_pr_mentions
+                        ]
 
-            # dry run: oracle
-            else:
-                pr_mentions = gt_mentions_transformed
+                    case "prompt-re-ranking":
+                        pr_mentions = [
+                            mention for mention in raw_pr_mentions if mention.isdigit()
+                        ]
 
-            if not pr_mentions:
+                    case "full-re-ranking":
+                        pr_mentions = [
+                            self.transform(raw_pr_mention)
+                            for raw_pr_mention in raw_pr_mentions
+                        ]
+
+                    case "ranker-results":
+                        pr_mentions = []
+
+            if not pr_mentions: # type: ignore
                 preds.append((ctx.task, []))
                 continue
 
             # obtain vertex predictions
             # TODO upstream; ordered result lists
-            pr_vids = self.ds.find_by_mention(
-                *pr_mentions,
-                splits=self.search_splits,
-            )
+
+            raw_pr_vids: set[VID] = set()
+            scored_pr_vids: set[(tuple[VID, int])] = set()
+            LOW_PRIORITY_SCORE: int = 1
+            HIGH_PRIORITY_SCORE: int = 2
+
+            match self.config.mode:
+                case "default":
+                    raw_pr_vids = set(
+                        vid
+                        for vid in self.ds.find_by_mention(
+                            *pr_mentions, splits=self.search_splits
+                        )
+                    )
+                    scored_pr_vids = set((vid, LOW_PRIORITY_SCORE) for vid in raw_pr_vids)
+                    for mention in pr_mentions:
+                        if mention in name2vid:
+                            vid = name2vid[mention]
+                            raw_pr_vids.add(vid)
+                            if (vid, LOW_PRIORITY_SCORE) in scored_pr_vids:
+                                scored_pr_vids.remove((name2vid[mention], LOW_PRIORITY_SCORE)) 
+                            scored_pr_vids.add((name2vid[mention], HIGH_PRIORITY_SCORE))
+                    
+                    # raw_pr_vids = set()
+                    # scored_pr_vids = set()
+
+                    # leftover_mentions = set()
+
+                    # for mention in pr_mentions:
+                    #     if mention in name2vid:
+                    #         vid = name2vid[mention]
+                    #         if vid not in raw_pr_vids:
+                    #             raw_pr_vids.add(vid)
+                    #             scored_pr_vids.add((vid,HIGH_PRIORITY_SCORE))
+                    #     else:
+                    #         leftover_mentions.add(mention)
+
+                    # found_vids = set(
+                    #     vid
+                    #     for vid in self.ds.find_by_mention(
+                    #         *leftover_mentions, splits=self.search_splits
+                    #     )
+                    # )
+
+                    # for vid in found_vids:
+                    #     if vid not in raw_pr_vids:
+                    #         raw_pr_vids.add(vid)
+                    #         scored_pr_vids.add((vid,LOW_PRIORITY_SCORE))
+
+                case "prompt-re-ranking":
+                    top_n_vids = self.assembler.get_top_n_vids(
+                        direction=direction, task=ctx.task
+                    )
+                    idxs = set(range(self.config.n_candidates))
+                    score = self.config.n_candidates
+
+                    for intdx in map(int, pr_mentions):
+                        if intdx < len(top_n_vids) and intdx in idxs:
+                            vid = top_n_vids[intdx]
+                            raw_pr_vids.add(vid)
+                            scored_pr_vids.add((vid, score - len(scored_pr_vids)))
+                            idxs.remove(intdx)
+
+                    for idx in idxs:
+                        raw_pr_vids.add(top_n_vids[idx])
+                        scored_pr_vids.add(
+                            (top_n_vids[idx], score - len(scored_pr_vids))
+                        )
+
+                case "full-re-ranking":
+                    top_n_vids = self.assembler.get_top_n_vids(
+                        direction=direction, task=ctx.task
+                    )
+                    idxs = set(range(self.config.n_candidates))
+                    score = self.config.n_candidates
+
+                    model_candidates = 0
+                    for pr in pr_mentions:
+                        if not pr.isdigit():
+                            model_candidates += 1
+
+                    score += model_candidates
+                    score *= 2
+
+                    for pr in pr_mentions:
+                        if pr.isdigit():
+                            intdx = int(pr)
+                            if intdx < len(top_n_vids) and intdx in idxs:
+                                vid = top_n_vids[intdx]
+                                if vid not in raw_pr_vids:
+                                    raw_pr_vids.add(vid)
+                                    scored_pr_vids.add((vid, score))
+                                idxs.remove(intdx)
+                        else:
+                            if pr in name2vid:
+                                vid = name2vid[pr]
+                                if vid not in raw_pr_vids:
+                                    raw_pr_vids.add(vid)
+                                    scored_pr_vids.add((name2vid[pr], score))
+                            vids = self.ds.find_by_mention(pr,splits=self.search_splits)
+                            for vid in vids:
+                                if vid not in raw_pr_vids:
+                                    raw_pr_vids.add(vid)
+                                    scored_pr_vids.add((vid, score - 1))
+
+                        score -= 2
+
+                    for idx in idxs:
+                        if top_n_vids[idx] not in raw_pr_vids:
+                            raw_pr_vids.add(top_n_vids[idx])
+                            scored_pr_vids.add(
+                                (top_n_vids[idx], score - len(scored_pr_vids))
+                            )
 
             # assign arbitrary scores
-            preds.append((ctx.task, [(vid, 1) for vid in pr_vids]))
+            preds.append((ctx.task, [pair for pair in scored_pr_vids]))
 
             # --- logging
 
@@ -358,10 +517,10 @@ class Runner:
                 f"transformed parsed mentions: {', '.join(pr_mentions)}",
                 f"true mentions: {', '.join(gt_mentions)}",
                 f"transformed true mentions: {', '.join(gt_mentions_transformed)}",
-                f"proposed vertices: {', '.join(self.ds.vertices[vid] for vid in pr_vids)}",
+                f"proposed vertices: {', '.join(self.ds.vertices[vid] for vid in raw_pr_vids)}",
                 f"true vertices: {', '.join(self.ds.vertices[vid] for vid in gt_vids)}",
-                f"{len(gt_vids & pr_vids)}/{len(gt_vids)} vids are correct",
-                f"{len(pr_vids - gt_vids)} are incorrectly predicted vertices",
+                f"{len(gt_vids & raw_pr_vids)}/{len(gt_vids)} vids are correct",
+                f"{len(raw_pr_vids - gt_vids)} are incorrectly predicted vertices",
                 "\n",
             )
 
@@ -426,6 +585,9 @@ def run(
 
     transformations: list[Callable[[str], str]] = []
 
+    transformations += [str.lower]
+    transformations += [str.strip]
+
     if config.stopwords_path != None:
         with open(config.stopwords_path, "r", encoding="utf-8") as stopword_file:
             transformations += [
@@ -440,6 +602,7 @@ def run(
 
     assembler = Assembler.from_paths(
         dataset=dataset,
+        mode=config.mode,
         split_str=config.split,
         dataset_name=dataset.name,
         template_path=config.prompt_template_path,
@@ -449,6 +612,7 @@ def run(
         texts_tail_path=config.dataset_texts_tail,
         n_candidates=config.n_candidates,
         mentions_per_candidate=config.mentions_per_candidate,
+        include_vertex_name=config.include_vertex_name,
     )
 
     runner = Runner(

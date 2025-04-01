@@ -1,0 +1,10 @@
+{system}
+You will be given a ranked list of Entities that are probable to stand in the specified relation to the first Entity.
+Each Entity in this list will be represented by a numbers of mentions of it from Texts.
+Your Task is to improve this ranking by filtering out mistakes and applying your knowledge to put them in a more favorable order.
+
+This is the ranked list:
+{candidates}
+
+This is the first entity and the relation:
+{question}
