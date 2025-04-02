@@ -1,4 +1,5 @@
 from ast import Tuple
+from operator import contains
 import pickle
 from dataclasses import dataclass
 from itertools import islice
@@ -22,15 +23,16 @@ from typing import Literal
 
 @dataclass
 class Assembler:
+    dataset_name: str
     dataset: IRT2
-    mode: Literal["default","prompt-re-ranking","full-re-ranking", "ranker-results"]
+    mode: Literal["default", "prompt-re-ranking", "full-re-ranking", "ranker-results"]
     split: Split
     template: str
     system: list[str]
     question: dict[Literal["head", "tail"], dict[str, str]]
     texts: dict[Literal["head", "tail"], dict[tuple[MID, RID] | MID, list[str]]] | None
-    scores_head: dict[tuple[int,int], np.ndarray] | None
-    scores_tail: dict[tuple[int,int], np.ndarray] | None
+    scores_head: dict[tuple[int, int], np.ndarray] | None
+    scores_tail: dict[tuple[int, int], np.ndarray] | None
     n_candidates: int
     mid2idx: dict[int, int] | None
     mentions_per_candidate: int
@@ -60,16 +62,16 @@ class Assembler:
         return " ".join(s.replace("\n", "") for s in islice(text_lis, n))
 
     def _get_n_mids_per_candidate(
-            self,
-            direction: Literal["head", "tail"],
-            mid: MID,
-            rid: RID,
+        self,
+        direction: Literal["head", "tail"],
+        mid: MID,
+        rid: RID,
     ) -> list[set[MID]]:
 
-        top_n_score_vids = self.get_top_n_vids(direction=direction, task=(mid,rid))
+        top_n_score_vids = self.get_top_n_vids(direction=direction, task=(mid, rid))
 
         mid_sets = []
-    
+
         for vid in top_n_score_vids:
             mid_set = self.dataset.idmap.vid2mids[Split.train][vid]
             if mid_set is None and self.split == Split.test:
@@ -78,33 +80,35 @@ class Assembler:
             mid_sets.append(mid_set)
 
         return mid_sets
-    
-    def get_top_n_vids(self, direction: Literal["head", "tail"], task: tuple[MID,RID]) -> list[int]:
 
-        assert self.mid2idx is not None
+    def get_top_n_vids(
+        self, direction: Literal["head", "tail"], task: tuple[MID, RID]
+    ) -> list[int]:
 
-        idx = self.mid2idx.get(task[0])
-        
-        if idx is None:
-            return []
+        if "IRT2" in self.dataset_name:
+            assert self.mid2idx is not None
+            idx = self.mid2idx.get(task[0])
+            if idx is None:
+                return []
+            task = (idx,task[1])
 
-        scores = self._get_scores_for_direction(direction=direction,task=(idx,task[1]))
+        scores = self._get_scores_for_direction(
+            direction=direction, task=task
+        )
 
         if scores is None:
             return []
 
-        return list(np.argsort(scores)[::-1][:self.n_candidates])
-        
-    def _get_scores_for_direction(self, direction: Literal["head", "tail"], task: tuple[int,int]):
+        return list(np.argsort(scores)[::-1][: self.n_candidates])
 
-        assert self.scores_head is not None
-        assert self.scores_tail is not None
+    def _get_scores_for_direction(
+        self, direction: Literal["head", "tail"], task: tuple[int, int]
+    ):
 
         if direction == "head":
-            return self.scores_head.get(task)
+            return self.scores_head.get(task)  # type: ignore
         else:
-            return self.scores_tail.get(task)
-    
+            return self.scores_tail.get(task)  # type: ignore
 
     def assemble(
         self,
@@ -120,33 +124,43 @@ class Assembler:
 
         system = " ".join(self.system)
 
-        if (
-            self.n_candidates > 0 and candidates == ""
-        ):
-            mid_sets = self._get_n_mids_per_candidate(direction,mid,rid)
+        if self.n_candidates > 0 and candidates == "":
+
+            if self.mentions_per_candidate > 0:
+                mid_sets = self._get_n_mids_per_candidate(direction, mid, rid)
+            else:
+                mid_sets = []
 
             if self.mode == "default":
+                mid_sets = self._get_n_mids_per_candidate(direction, mid, rid)
                 candidates = ", ".join(
-                    self.dataset.idmap.mid2str[mid] for mid_set in mid_sets for mid in list(mid_set)[:self.mentions_per_candidate]
+                    self.dataset.idmap.mid2str[mid]
+                    for mid_set in mid_sets
+                    for mid in list(mid_set)[: self.mentions_per_candidate]
                 )
             else:
 
                 if self.include_vertex_name:
-                    top_n_vids = self.get_top_n_vids(direction=direction,task=(mid,rid))
-                    top_n_entity_names: list[str] = [self.dataset.idmap.vid2str[vid].split(":")[1] for vid in top_n_vids]
+                    top_n_vids = self.get_top_n_vids(
+                        direction=direction, task=(mid, rid)
+                    )
+                    top_n_entity_names: list[str] = [
+                        self.dataset.idmap.vid2str[vid].split(":")[1]
+                        for vid in top_n_vids
+                    ]
 
-                    candidates  = "\n".join(
+                    candidates = "\n".join(
                         f"{i}: {top_n_entity_names[i]}, {', '.join(self.dataset.idmap.mid2str[mid] for mid in list(mid_set)[:self.mentions_per_candidate])}"
                         for i, mid_set in enumerate(mid_sets)
                     )
                 else:
-                    candidates  = "\n".join(
+                    candidates = "\n".join(
                         f"{i}: {', '.join(self.dataset.idmap.mid2str[mid] for mid in list(mid_set)[:self.mentions_per_candidate])}"
                         for i, mid_set in enumerate(mid_sets)
                     )
 
-                candidates.replace(",\n","\n")
-                
+                candidates.replace(",\n", "\n")
+
         template = self.template.format(
             system=system,
             question=question,
@@ -168,7 +182,9 @@ class Assembler:
         cls,
         dataset_name: str,
         dataset: IRT2,
-        mode: Literal["default","prompt-re-ranking","full-re-ranking", "ranker-results"],
+        mode: Literal[
+            "default", "prompt-re-ranking", "full-re-ranking", "ranker-results"
+        ],
         split_str: str,
         template_path: str | Path,
         system_path: str | Path,
@@ -177,7 +193,7 @@ class Assembler:
         texts_tail_path: str | Path | None = None,
         n_candidates: int = 0,
         mentions_per_candidate: int = 1,
-        include_vertex_name: bool = False
+        include_vertex_name: bool = False,
     ):
         with (
             path(template_path, is_file=True).open(mode="r") as tmpl_fd,
@@ -193,32 +209,49 @@ class Assembler:
                     continue
                 question = conf["prompts"]
 
-            scores_head_dict: dict[tuple[int,int], np.ndarray] | None = None
-            scores_tail_dict: dict[tuple[int,int], np.ndarray] | None = None
+            scores_head_dict: dict[tuple[int, int], np.ndarray] | None = None
+            scores_tail_dict: dict[tuple[int, int], np.ndarray] | None = None
 
-            scores_path = next(dataset.path.glob(f"*scores.{split_str}.h5"), None)
-            mid2idx_path = next(dataset.path.glob("mid2idx-irt2-*.pkl"), None)
+            mid2idx = None
 
-            if mid2idx_path:
-                with open(mid2idx_path, "rb") as file:
-                    mid2idx = pickle.load(file)
-            else:
-                mid2idx = None
+            if n_candidates > 0:
 
-            if n_candidates > 0 and scores_path != None:
-                with h5py.File(scores_path, "r") as scores_fd:
-                    head_tasks = scores_fd["head"]["tasks"] # type: ignore
-                    head_scores = scores_fd["head"]["scores"] # type: ignore
-                    scores_head_dict = {
-                        (task[0], task[1]): head_scores[i] # type: ignore
-                        for i, task in enumerate(head_tasks) # type: ignore
-                    }
-                    tail_tasks = scores_fd["tail"]["tasks"] # type: ignore
-                    tail_scores = scores_fd["tail"]["scores"] # type: ignore
-                    scores_tail_dict = {
-                        (task[0], task[1]): tail_scores[i] # type: ignore
-                        for i, task in enumerate(tail_tasks) # type: ignore
-                    }
+                if "IRT2" in dataset_name:
+                    scores_path = next(dataset.path.glob(f"*scores.{split_str}.h5"), None)
+                    mid2idx_path = next(dataset.path.glob("mid2idx-irt2-*.pkl"), None)
+
+                    if mid2idx_path:
+                        with open(mid2idx_path, "rb") as file:
+                            mid2idx = pickle.load(file)
+
+                    assert scores_path != None
+
+                    with h5py.File(scores_path, "r") as scores_fd:
+                        head_tasks = scores_fd["head"]["tasks"]  # type: ignore
+                        head_scores = scores_fd["head"]["scores"]  # type: ignore
+                        scores_head_dict = {
+                            (task[0], task[1]): head_scores[i]  # type: ignore
+                            for i, task in enumerate(head_tasks)  # type: ignore
+                        }
+                        tail_tasks = scores_fd["tail"]["tasks"]  # type: ignore
+                        tail_scores = scores_fd["tail"]["scores"]  # type: ignore
+                        scores_tail_dict = {
+                            (task[0], task[1]): tail_scores[i]  # type: ignore
+                            for i, task in enumerate(tail_tasks)  # type: ignore
+                        }
+
+                else:
+
+                    prefix = dataset_name.split("/")[1]
+
+                    scores_path = next(dataset.path.glob(f"{prefix}-{split_str}.pkl"), None)
+                    assert scores_path != None
+
+                    with open(scores_path, "rb") as file:
+                        scores = pickle.load(file)
+
+                        scores_head_dict = scores["head predictions"]
+                        scores_tail_dict = scores["tail predictions"]
 
         assert question is not None, "did not find {dataset_name} in {question_path}"
 
@@ -236,6 +269,7 @@ class Assembler:
             split = Split.valid
 
         return cls(
+            dataset_name=dataset_name,
             dataset=dataset,
             mode=mode,
             split=split,
