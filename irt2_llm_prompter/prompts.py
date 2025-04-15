@@ -59,7 +59,7 @@ class Assembler:
 
         return " ".join(s.replace("\n", "") for s in islice(text_lis, n))
 
-    def _get_n_mids_per_candidate(
+    def get_n_mids_per_candidate(
             self,
             direction: Literal["head", "tail"],
             mid: MID,
@@ -79,7 +79,7 @@ class Assembler:
 
         return mid_sets
     
-    def get_top_n_vids(self, direction: Literal["head", "tail"], task: tuple[MID,RID]) -> list[int]:
+    def get_top_n_vids(self, direction: Literal["head", "tail"], task: tuple[MID,RID], n: int | None = None) -> list[int]:
 
         assert self.mid2idx is not None
 
@@ -92,6 +92,9 @@ class Assembler:
 
         if scores is None:
             return []
+        
+        if n is not None:
+            return list(np.argsort(scores)[::-1][:n])
 
         return list(np.argsort(scores)[::-1][:self.n_candidates])
         
@@ -123,7 +126,7 @@ class Assembler:
         if (
             self.n_candidates > 0 and candidates == ""
         ):
-            mid_sets = self._get_n_mids_per_candidate(direction,mid,rid)
+            mid_sets = self.get_n_mids_per_candidate(direction,mid,rid)
 
             if self.mode == "default":
                 candidates = ", ".join(

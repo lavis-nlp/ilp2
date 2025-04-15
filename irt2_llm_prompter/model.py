@@ -62,8 +62,8 @@ def parse_csv_answer(
 ) -> list[str]:
     if output.count(":") == 1:
         output = output.split(":")[1]
-    # agg: list[str] = re.split(r"[,:]", output)
-    agg: list[str] = output.split(",")
+    agg: list[str] = re.split(r"[,:\n]", output)
+    # agg: list[str] = output.split(",")
     return normalize(agg)
 
 

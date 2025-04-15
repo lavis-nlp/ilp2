@@ -396,6 +396,8 @@ class Runner:
             LOW_PRIORITY_SCORE: int = 1
             HIGH_PRIORITY_SCORE: int = 2
 
+            additionally_proposed_names = []
+
             match self.config.mode:
                 case "default":
                     raw_pr_vids = set(
@@ -412,32 +414,6 @@ class Runner:
                             if (vid, LOW_PRIORITY_SCORE) in scored_pr_vids:
                                 scored_pr_vids.remove((name2vid[mention], LOW_PRIORITY_SCORE)) 
                             scored_pr_vids.add((name2vid[mention], HIGH_PRIORITY_SCORE))
-                    
-                    # raw_pr_vids = set()
-                    # scored_pr_vids = set()
-
-                    # leftover_mentions = set()
-
-                    # for mention in pr_mentions:
-                    #     if mention in name2vid:
-                    #         vid = name2vid[mention]
-                    #         if vid not in raw_pr_vids:
-                    #             raw_pr_vids.add(vid)
-                    #             scored_pr_vids.add((vid,HIGH_PRIORITY_SCORE))
-                    #     else:
-                    #         leftover_mentions.add(mention)
-
-                    # found_vids = set(
-                    #     vid
-                    #     for vid in self.ds.find_by_mention(
-                    #         *leftover_mentions, splits=self.search_splits
-                    #     )
-                    # )
-
-                    # for vid in found_vids:
-                    #     if vid not in raw_pr_vids:
-                    #         raw_pr_vids.add(vid)
-                    #         scored_pr_vids.add((vid,LOW_PRIORITY_SCORE))
 
                 case "prompt-re-ranking":
                     top_n_vids = self.assembler.get_top_n_vids(
@@ -463,6 +439,16 @@ class Runner:
                     top_n_vids = self.assembler.get_top_n_vids(
                         direction=direction, task=ctx.task
                     )
+                    top_n_entity_names: list[str] = [self.transform(self.ds.idmap.vid2str[vid].split(":")[1]) for vid in top_n_vids]
+                    mid_sets = self.assembler.get_n_mids_per_candidate(direction=direction, mid=ctx.task[0], rid=ctx.task[1])
+                    
+                    redundant_names = set()
+                    for name in top_n_entity_names:
+                        redundant_names.add(name)
+                    for mid_set in mid_sets:
+                        for mid in mid_set:
+                            redundant_names.add(self.ds.idmap.mid2str[mid])
+
                     idxs = set(range(self.config.n_candidates))
                     score = self.config.n_candidates
 
@@ -484,6 +470,10 @@ class Runner:
                                     scored_pr_vids.add((vid, score))
                                 idxs.remove(intdx)
                         else:
+                            # not using a set so I keep the order
+                            if pr not in redundant_names and pr not in additionally_proposed_names:
+                                additionally_proposed_names.append(pr)
+
                             if pr in name2vid:
                                 vid = name2vid[pr]
                                 if vid not in raw_pr_vids:
@@ -504,17 +494,30 @@ class Runner:
                                 (top_n_vids[idx], score - len(scored_pr_vids))
                             )
 
+                    top_n_vids = self.assembler.get_top_n_vids(
+                        direction=direction, task=ctx.task, n=50
+                    )
+                    for i in range(50):
+                        if top_n_vids[i] not in raw_pr_vids:
+                            raw_pr_vids.add(top_n_vids[i])
+                            scored_pr_vids.add(
+                                (top_n_vids[i], score - len(scored_pr_vids))
+                            )
+
+
+
             # assign arbitrary scores
             preds.append((ctx.task, [pair for pair in scored_pr_vids]))
 
             # --- logging
 
-            self._trace(
+            if self.config.mode == "full-re-ranking":
+                self._trace(
                 "-" * 80,
                 "\n  -".join(f"{k}: {v}" for k, v in asdict(ctx).items()),
                 f"model output: {output}",
-                f"parsed mentions: {', '.join(pr_mentions)}",
                 f"transformed parsed mentions: {', '.join(pr_mentions)}",
+                f"additional proposed vertices: {', '.join(additionally_proposed_names)}",
                 f"true mentions: {', '.join(gt_mentions)}",
                 f"transformed true mentions: {', '.join(gt_mentions_transformed)}",
                 f"proposed vertices: {', '.join(self.ds.vertices[vid] for vid in raw_pr_vids)}",
@@ -522,7 +525,22 @@ class Runner:
                 f"{len(gt_vids & raw_pr_vids)}/{len(gt_vids)} vids are correct",
                 f"{len(raw_pr_vids - gt_vids)} are incorrectly predicted vertices",
                 "\n",
-            )
+                )
+            else:
+                self._trace(
+                    "-" * 80,
+                    "\n  -".join(f"{k}: {v}" for k, v in asdict(ctx).items()),
+                    f"model output: {output}",
+                    f"parsed mentions: {', '.join(pr_mentions)}",
+                    f"transformed parsed mentions: {', '.join(pr_mentions)}",
+                    f"true mentions: {', '.join(gt_mentions)}",
+                    f"transformed true mentions: {', '.join(gt_mentions_transformed)}",
+                    f"proposed vertices: {', '.join(self.ds.vertices[vid] for vid in raw_pr_vids)}",
+                    f"true vertices: {', '.join(self.ds.vertices[vid] for vid in gt_vids)}",
+                    f"{len(gt_vids & raw_pr_vids)}/{len(gt_vids)} vids are correct",
+                    f"{len(raw_pr_vids - gt_vids)} are incorrectly predicted vertices",
+                    "\n",
+                )
 
         # restore state
         self.ds.idmap.mid2str = mid2str_original
@@ -587,6 +605,11 @@ def run(
 
     transformations += [str.lower]
     transformations += [str.strip]
+
+    def remove_dots(str):
+        return str.replace(".","")
+    
+    transformations += [remove_dots]
 
     if config.stopwords_path != None:
         with open(config.stopwords_path, "r", encoding="utf-8") as stopword_file:
