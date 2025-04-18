@@ -73,6 +73,10 @@ class Assembler:
         mid_sets = []
 
         for vid in top_n_score_vids:
+            if self.mentions_per_candidate == 0:
+                mid_sets.append(set())
+                continue
+
             mid_set = self.dataset.idmap.vid2mids[Split.train][vid]
             if mid_set is None and self.split == Split.test:
                 mid_set = self.dataset.idmap.vid2mids[Split.valid][vid]
@@ -90,11 +94,9 @@ class Assembler:
             idx = self.mid2idx.get(task[0])
             if idx is None:
                 return []
-            task = (idx,task[1])
+            task = (idx, task[1])
 
-        scores = self._get_scores_for_direction(
-            direction=direction, task=task
-        )
+        scores = self._get_scores_for_direction(direction=direction, task=task)
 
         if scores is None:
             return []
@@ -126,13 +128,9 @@ class Assembler:
 
         if self.n_candidates > 0 and candidates == "":
 
-            if self.mentions_per_candidate > 0:
-                mid_sets = self._get_n_mids_per_candidate(direction, mid, rid)
-            else:
-                mid_sets = []
+            mid_sets = self._get_n_mids_per_candidate(direction, mid, rid)
 
             if self.mode == "default":
-                mid_sets = self._get_n_mids_per_candidate(direction, mid, rid)
                 candidates = ", ".join(
                     self.dataset.idmap.mid2str[mid]
                     for mid_set in mid_sets
@@ -144,6 +142,7 @@ class Assembler:
                     top_n_vids = self.get_top_n_vids(
                         direction=direction, task=(mid, rid)
                     )
+
                     top_n_entity_names: list[str] = [
                         self.dataset.idmap.vid2str[vid].split(":")[1]
                         for vid in top_n_vids
@@ -153,6 +152,9 @@ class Assembler:
                         f"{i}: {top_n_entity_names[i]}, {', '.join(self.dataset.idmap.mid2str[mid] for mid in list(mid_set)[:self.mentions_per_candidate])}"
                         for i, mid_set in enumerate(mid_sets)
                     )
+
+                    print(candidates)
+
                 else:
                     candidates = "\n".join(
                         f"{i}: {', '.join(self.dataset.idmap.mid2str[mid] for mid in list(mid_set)[:self.mentions_per_candidate])}"
@@ -217,7 +219,9 @@ class Assembler:
             if n_candidates > 0:
 
                 if "IRT2" in dataset_name:
-                    scores_path = next(dataset.path.glob(f"*scores.{split_str}.h5"), None)
+                    scores_path = next(
+                        dataset.path.glob(f"*scores.{split_str}.h5"), None
+                    )
                     mid2idx_path = next(dataset.path.glob("mid2idx-irt2-*.pkl"), None)
 
                     if mid2idx_path:
@@ -244,7 +248,9 @@ class Assembler:
 
                     prefix = dataset_name.split("/")[1]
 
-                    scores_path = next(dataset.path.glob(f"{prefix}-{split_str}.pkl"), None)
+                    scores_path = next(
+                        dataset.path.glob(f"{prefix}-{split_str}.pkl"), None
+                    )
                     assert scores_path != None
 
                     with open(scores_path, "rb") as file:
