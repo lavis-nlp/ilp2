@@ -1,0 +1,12 @@
+{system}
+You will be given a ranked list of entities that are probable to stand in the specified relation to the first entity.
+Each entity in this list will be represented by its name and a numbers of mentions of it from texts.
+Your task is to re-rank these by giving us a list of these indices sorted by ranking quality.
+All good candidates should be in front to increase our hits at 1 and hits at 10 scores.
+Please add in additional correct answers to the list of answers by stating their name as plain text.
+
+This is the ranked list:
+{candidates}
+
+This is the first entity and the relation:
+{question}
