@@ -547,6 +547,8 @@ class Runner:
 
             # --- logging
 
+            _trace_pr_vids = [self.ds.vertices[vid] for vids in pr_vids for vid in vids]
+
             self._trace(
                 "-" * 80,
                 "\n  -".join(f"{k}: {v}" for k, v in asdict(ctx).items()),
@@ -556,7 +558,7 @@ class Runner:
                 # f"additional proposed vertices: {', '.join(additionally_proposed_names)}",
                 f"true mentions: {', '.join(gt_mentions)}",
                 f"transformed true mentions: {', '.join(gt_mentions_transformed)}",
-                f"proposed vertices: {', '.join(self.ds.vertices[vid] for vid in set(pr_vids))}",
+                f"proposed vertices: {', '.join(_trace_pr_vids)}",
                 f"true vertices: {', '.join(self.ds.vertices[vid] for vid in gt_vids)}",
                 f"{len(gt_vids & set(pr_vids))}/{len(gt_vids)} vids are correct",
                 f"{len(set(pr_vids) - gt_vids)} are incorrectly predicted vertices",
