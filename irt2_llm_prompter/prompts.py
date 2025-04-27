@@ -104,10 +104,18 @@ class Assembler:
         if scores is None:
             return []
 
-        if n is not None:
-            return list(np.argsort(scores)[::-1][:n])
+        if "IRT2" in self.dataset_name:
+            if n is not None:
+                return list(np.argsort(scores)[::-1][:n])
 
-        return list(np.argsort(scores)[::-1][: self.n_candidates])
+            return list(np.argsort(scores)[::-1][: self.n_candidates])
+
+        else:
+
+            if n is not None:
+                return scores[:n]  # type: ignore
+
+            return scores[: self.n_candidates]  # type: ignore
 
     def _get_scores_for_direction(
         self, direction: Literal["head", "tail"], task: tuple[int, int]
@@ -157,8 +165,6 @@ class Assembler:
                         f"{i}: {top_n_entity_names[i]}, {', '.join(self.dataset.idmap.mid2str[mid] for mid in list(mid_set)[:self.mentions_per_candidate])}"
                         for i, mid_set in enumerate(mid_sets)
                     )
-
-                    print(candidates)
 
                 else:
                     candidates = "\n".join(
