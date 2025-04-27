@@ -541,7 +541,7 @@ class Runner:
 
             # assign scores
 
-            scored = enumerate(pr_vids[::-1])
+            scored = enumerate(filter(len, pr_vids[::-1]))
             scored = [(score, vid) for score, vids in scored for vid in vids]
             preds.append((ctx.task, scored))
 
