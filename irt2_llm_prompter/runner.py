@@ -415,9 +415,9 @@ class Runner:
                             raw_pr_vids.add(vid)
                             if (vid, LOW_PRIORITY_SCORE) in scored_pr_vids:
                                 scored_pr_vids.remove(
-                                    (name2vid[mention], LOW_PRIORITY_SCORE)
+                                    (name2vid[mention], LOW_PRIORITY_SCORE,)
                                 )
-                            scored_pr_vids.add((name2vid[mention], HIGH_PRIORITY_SCORE))
+                            scored_pr_vids.add((name2vid[mention], HIGH_PRIORITY_SCORE,))
 
                 case "prompt-re-ranking":
                     top_n_vids = self.assembler.get_top_n_vids(
@@ -491,8 +491,10 @@ class Runner:
                                 if vid not in raw_pr_vids:
                                     raw_pr_vids.add(vid)
                                     scored_pr_vids.add((name2vid[pr], score))
+
                             vids = self.ds.find_by_mention(
-                                pr, splits=self.search_splits
+                                pr,
+                                splits=self.search_splits,
                             )
                             for vid in vids:
                                 if vid not in raw_pr_vids:
@@ -505,7 +507,10 @@ class Runner:
                         if top_n_vids[idx] not in raw_pr_vids:
                             raw_pr_vids.add(top_n_vids[idx])
                             scored_pr_vids.add(
-                                (top_n_vids[idx], score - len(scored_pr_vids))
+                                (
+                                    top_n_vids[idx],
+                                    score - len(scored_pr_vids),
+                                )
                             )
 
                     top_n_vids = self.assembler.get_top_n_vids(
@@ -515,10 +520,13 @@ class Runner:
                         if top_n_vids[i] not in raw_pr_vids:
                             raw_pr_vids.add(top_n_vids[i])
                             scored_pr_vids.add(
-                                (top_n_vids[i], score - len(scored_pr_vids))
+                                (
+                                    top_n_vids[i],
+                                    score - len(scored_pr_vids),
+                                )
                             )
 
-            # assign arbitrary scores
+            # assign scores
             preds.append((ctx.task, [pair for pair in scored_pr_vids]))
 
             # --- logging
