@@ -25,7 +25,12 @@ from typing import Literal
 class Assembler:
     dataset_name: str
     dataset: IRT2
-    mode: Literal["default", "prompt-re-ranking", "full-re-ranking", "ranker-results"]
+    mode: Literal[
+        "default",
+        "prompt-re-ranking",
+        "full-re-ranking",
+        "ranker-results",
+    ]
     split: Split
     template: str
     system: list[str]
@@ -104,27 +109,26 @@ class Assembler:
         if scores is None:
             return []
 
+        if n is None:
+            n = self.n_candidates
+
         if "IRT2" in self.dataset_name:
-            if n is not None:
-                return list(np.argsort(scores)[::-1][:n])
+            breakpoint()
+            return list(np.argsort(scores)[::-1][:n])
 
-            return list(np.argsort(scores)[::-1][: self.n_candidates])
-
-        else:
-
-            if n is not None:
-                return scores[:n]  # type: ignore
-
-            return scores[: self.n_candidates]  # type: ignore
+        return scores[:n]
 
     def _get_scores_for_direction(
-        self, direction: Literal["head", "tail"], task: tuple[int, int]
+        self,
+        direction: Literal["head", "tail"],
+        task: tuple[int, int],
     ):
+        dic = dict(
+            head=self.scores_head,
+            tail=self.scores_tail,
+        )
 
-        if direction == "head":
-            return self.scores_head.get(task)  # type: ignore
-        else:
-            return self.scores_tail.get(task)  # type: ignore
+        return dic[task]
 
     def assemble(
         self,
@@ -196,7 +200,10 @@ class Assembler:
         dataset_name: str,
         dataset: IRT2,
         mode: Literal[
-            "default", "prompt-re-ranking", "full-re-ranking", "ranker-results"
+            "default",
+            "prompt-re-ranking",
+            "full-re-ranking",
+            "ranker-results",
         ],
         split_str: str,
         template_path: str | Path,

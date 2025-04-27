@@ -57,7 +57,7 @@ class Config:
     mentions_per_candidate: int = 1  # mentions per candidate proposed to the model
     give_true_candidates: bool = False
     include_vertex_name: bool = False
-    use_ranker_results:bool = False
+    use_ranker_results: bool = False
 
     # sampling params (beam search)
     use_beam_search: bool = True
@@ -339,13 +339,13 @@ class Runner:
                 scored_pr_vids: set[(tuple[VID, int])] = set()
 
                 top_n_vids = self.assembler.get_top_n_vids(
-                        direction=direction, task=ctx.task
+                    direction=direction, task=ctx.task
                 )
 
                 score = self.config.n_candidates
                 for vid in top_n_vids:
                     raw_pr_vids.add(vid)
-                    scored_pr_vids.add((vid,score))
+                    scored_pr_vids.add((vid, score))
                     score -= 1
 
                 preds.append((ctx.task, [pair for pair in scored_pr_vids]))
@@ -384,7 +384,7 @@ class Runner:
                     case "ranker-results":
                         pr_mentions = []
 
-            if not pr_mentions: # type: ignore
+            if not pr_mentions:  # type: ignore
                 preds.append((ctx.task, []))
                 continue
 
@@ -406,13 +406,17 @@ class Runner:
                             *pr_mentions, splits=self.search_splits
                         )
                     )
-                    scored_pr_vids = set((vid, LOW_PRIORITY_SCORE) for vid in raw_pr_vids)
+                    scored_pr_vids = set(
+                        (vid, LOW_PRIORITY_SCORE) for vid in raw_pr_vids
+                    )
                     for mention in pr_mentions:
                         if mention in name2vid:
                             vid = name2vid[mention]
                             raw_pr_vids.add(vid)
                             if (vid, LOW_PRIORITY_SCORE) in scored_pr_vids:
-                                scored_pr_vids.remove((name2vid[mention], LOW_PRIORITY_SCORE)) 
+                                scored_pr_vids.remove(
+                                    (name2vid[mention], LOW_PRIORITY_SCORE)
+                                )
                             scored_pr_vids.add((name2vid[mention], HIGH_PRIORITY_SCORE))
 
                 case "prompt-re-ranking":
@@ -439,9 +443,14 @@ class Runner:
                     top_n_vids = self.assembler.get_top_n_vids(
                         direction=direction, task=ctx.task
                     )
-                    top_n_entity_names: list[str] = [self.transform(self.ds.idmap.vid2str[vid].split(":")[1]) for vid in top_n_vids]
-                    mid_sets = self.assembler.get_n_mids_per_candidate(direction=direction, mid=ctx.task[0], rid=ctx.task[1])
-                    
+                    top_n_entity_names: list[str] = [
+                        self.transform(self.ds.idmap.vid2str[vid].split(":")[1])
+                        for vid in top_n_vids
+                    ]
+                    mid_sets = self.assembler.get_n_mids_per_candidate(
+                        direction=direction, mid=ctx.task[0], rid=ctx.task[1]
+                    )
+
                     redundant_names = set()
                     for name in top_n_entity_names:
                         redundant_names.add(name)
@@ -471,7 +480,10 @@ class Runner:
                                 idxs.remove(intdx)
                         else:
                             # not using a set so I keep the order
-                            if pr not in redundant_names and pr not in additionally_proposed_names:
+                            if (
+                                pr not in redundant_names
+                                and pr not in additionally_proposed_names
+                            ):
                                 additionally_proposed_names.append(pr)
 
                             if pr in name2vid:
@@ -479,7 +491,9 @@ class Runner:
                                 if vid not in raw_pr_vids:
                                     raw_pr_vids.add(vid)
                                     scored_pr_vids.add((name2vid[pr], score))
-                            vids = self.ds.find_by_mention(pr,splits=self.search_splits)
+                            vids = self.ds.find_by_mention(
+                                pr, splits=self.search_splits
+                            )
                             for vid in vids:
                                 if vid not in raw_pr_vids:
                                     raw_pr_vids.add(vid)
@@ -504,8 +518,6 @@ class Runner:
                                 (top_n_vids[i], score - len(scored_pr_vids))
                             )
 
-
-
             # assign arbitrary scores
             preds.append((ctx.task, [pair for pair in scored_pr_vids]))
 
@@ -513,18 +525,18 @@ class Runner:
 
             if self.config.mode == "full-re-ranking":
                 self._trace(
-                "-" * 80,
-                "\n  -".join(f"{k}: {v}" for k, v in asdict(ctx).items()),
-                f"model output: {output}",
-                f"transformed parsed mentions: {', '.join(pr_mentions)}",
-                f"additional proposed vertices: {', '.join(additionally_proposed_names)}",
-                f"true mentions: {', '.join(gt_mentions)}",
-                f"transformed true mentions: {', '.join(gt_mentions_transformed)}",
-                f"proposed vertices: {', '.join(self.ds.vertices[vid] for vid in raw_pr_vids)}",
-                f"true vertices: {', '.join(self.ds.vertices[vid] for vid in gt_vids)}",
-                f"{len(gt_vids & raw_pr_vids)}/{len(gt_vids)} vids are correct",
-                f"{len(raw_pr_vids - gt_vids)} are incorrectly predicted vertices",
-                "\n",
+                    "-" * 80,
+                    "\n  -".join(f"{k}: {v}" for k, v in asdict(ctx).items()),
+                    f"model output: {output}",
+                    f"transformed parsed mentions: {', '.join(pr_mentions)}",
+                    f"additional proposed vertices: {', '.join(additionally_proposed_names)}",
+                    f"true mentions: {', '.join(gt_mentions)}",
+                    f"transformed true mentions: {', '.join(gt_mentions_transformed)}",
+                    f"proposed vertices: {', '.join(self.ds.vertices[vid] for vid in raw_pr_vids)}",
+                    f"true vertices: {', '.join(self.ds.vertices[vid] for vid in gt_vids)}",
+                    f"{len(gt_vids & raw_pr_vids)}/{len(gt_vids)} vids are correct",
+                    f"{len(raw_pr_vids - gt_vids)} are incorrectly predicted vertices",
+                    "\n",
                 )
             else:
                 self._trace(
@@ -607,8 +619,8 @@ def run(
     transformations += [str.strip]
 
     def remove_dots(str):
-        return str.replace(".","")
-    
+        return str.replace(".", "")
+
     transformations += [remove_dots]
 
     if config.stopwords_path != None:

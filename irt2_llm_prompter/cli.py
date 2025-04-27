@@ -58,9 +58,12 @@ def main(quiet: bool, debug: bool):
 @main.command(name="run-experiment")
 @click.option(
     "--mode",
-    type=click.Choice(["default","prompt-re-ranking","full-re-ranking", "ranker-results"], case_sensitive=False),
+    type=click.Choice(
+        ["default", "prompt-re-ranking", "full-re-ranking", "ranker-results"],
+        case_sensitive=False,
+    ),
     required=True,
-    help="mode in which outputs are processed, use mode specific prompts"
+    help="mode in which outputs are processed, use mode specific prompts",
 )
 @click.option(
     "--split",
@@ -199,7 +202,7 @@ def main(quiet: bool, debug: bool):
 @click.option(
     "--include-vertex-name",
     is_flag=True,
-    help="includes the vertex name in prompt-re-ranking-candidates"
+    help="includes the vertex name in prompt-re-ranking-candidates",
 )
 @click.option("--sampling-temperature", type=float)
 @click.option("--sampling-top-p", type=float)
@@ -210,7 +213,7 @@ def main(quiet: bool, debug: bool):
 @click.option("--sampling-repetition-penalty", type=float)
 def run_experiment(
     split: Literal["validation", "test"],
-    mode: Literal["default","prompt-re-ranking","full-re-ranking", "ranker-results"],
+    mode: Literal["default", "prompt-re-ranking", "full-re-ranking", "ranker-results"],
     model: str,
     tensor_parallel_size: int,
     prompt_template: str,
