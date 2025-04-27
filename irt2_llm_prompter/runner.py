@@ -1,6 +1,6 @@
 import csv
-from curses.ascii import isdigit
 import gzip
+from curses.ascii import isdigit
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from functools import partial
@@ -8,7 +8,7 @@ from itertools import islice
 from pathlib import Path
 from shutil import which
 from traceback import print_exc
-from typing import Callable, Generator, Iterable, Literal
+from typing import Callable, Generator, Iterable, Literal, Sequence
 
 import orjson
 import yaml
@@ -28,7 +28,13 @@ Tasks = dict[tuple[MID, RID], set[VID]]
 @dataclass
 class Config:
     # mode configuration
-    mode: Literal["default", "prompt-re-ranking", "full-re-ranking", "ranker-results"]
+    mode: Literal[
+        "default",
+        "prompt-re-ranking",
+        "full-re-ranking",
+        "ranker-results",
+    ]
+
     # data configuration
     dataset_path: str
     split: Literal["validation", "test"]
@@ -273,7 +279,188 @@ class Runner:
             s = fn(s)
         return s
 
-    # ---
+    # ---  PREDICTIONS
+
+    # all _predict* functions return:
+    # pr_vids: Sequence[Sequence[VID]] containing the vids proposed by the model
+    #   - scores are assigned automatically descending on order of the sequence
+    #   - subsequences get the same score
+    #   - e.g. [[A,B], [C, ]] -> [(A, 2), (B, 2), (C, 1)]
+
+    # --
+
+    # mode: default
+    #   - ask model, obtain mentions, ground mentions by search
+    #   - mentions found by name are ranked higher than all other
+    #   - order is retained for both named and mentioned vids
+    def _parse_default(self, raw_pr_mentions: list):
+        return list(map(self.transform, raw_pr_mentions))
+
+    def _predict_default(self, pr_mentions: list) -> Sequence:
+        named = {
+            self.name2vid[mention]
+            for mention in pr_mentions
+            if mention in self.name2vid
+        }
+
+        # retain order of proposals
+        known, hi, lo = set(), [], []
+        for mention in pr_mentions:
+            found: set[VID] = self.ds.find_by_mention(
+                mention,
+                splits=self.search_splits,
+            )
+
+            found -= known
+            for vid in found:
+                if vid in named:
+                    hi.append(vid)
+                else:
+                    lo.append(vid)
+
+            known |= found
+        return hi, lo
+
+    # mode: prompt re-ranking
+    #  - model gets N pre-ranked entities
+    #  - model is only allowed to select from list
+    #  - new order is determined by model output
+    #  - proposals ignored by the model are appended
+    #  - other >N pre-ranking results are appended after
+    def _parse_prr(self, raw_pr_mentions: list):
+        return list(filter(str.isdigit, raw_pr_mentions))
+
+    def _predict_prr(
+        self,
+        pr_mentions: list[str],
+        direction: Literal["head", "tail"],
+        task: Task,
+    ) -> Sequence:
+
+        preranked_vids = self.assembler.get_ranked_vids(
+            direction=direction,
+            task=task,
+        )
+
+        vids = []
+        for idx in map(int, pr_mentions):
+            # only allow proposed
+            if idx > self.config.n_candidates:
+                continue
+
+            # assuming they are proposed with index 0
+            vid = preranked_vids[idx]
+            vids.append([vid])
+
+        known = set(vids)
+        vids += list([vid] for vid in preranked_vids if vid not in known)
+
+        return vids
+
+    # mode: full re-ranking
+    def _parse_frr(self, raw_pr_mentions: list):
+        return list(map(self.transform, raw_pr_mentions))
+
+    def _predict_frr(
+        self,
+        pr_mentions: list[str],
+        direction: Literal["head", "tail"],
+        task: Task,
+    ):
+
+        preranked_vids = self.assembler.get_ranked_vids(
+            direction=direction,
+            task=task,
+        )
+
+        known, vids = set(), []
+
+        for pred in pr_mentions:
+            # (1) model referenced pre-ranker list
+            if pred.isdigit():
+                idx = int(pred)
+                if idx > self.config.n_candidates:
+                    continue
+
+                vid = vids.append(preranked_vids[idx])
+                vids.append([vid])
+                known.add(vid)
+                continue
+
+            # (2) try to look up by name
+            vid = self.name2vid.get(pred)
+            if vid is not None:
+                vids.append([vid])
+                known.add(vid)
+                continue
+
+            # (3) look up by mention
+            matched_vids = self.ds.find_by_mention(
+                pred,
+                splits=self.search_splits,
+            )
+            matched_vids -= known
+            known |= matched_vids
+            vids.append(list(matched_vids))
+
+        # append remaining pre-ranked candidates
+        for vid in preranked_vids:
+            if vid in known:
+                continue
+            vids.append([vid])
+
+        return vids
+
+    # mode: ranker-results
+    def _predict_rr(self, ctx, direction) -> tuple[Task, list[tuple[float, VID]]]:
+        preranked_vids = self.assembler.get_ranked_vids(
+            direction=direction,
+            task=ctx,
+        )
+        return ctx.task, list(enumerate(preranked_vids[::-1]))
+
+    # modes in which model answers are parsed
+    def _predict(self, pr_mentions, direction, task):
+        match self.config.mode:
+            case "default":
+                return self._predict_default(
+                    pr_mentions,
+                )
+
+            case "prompt-re-ranking":
+                return self._predict_prr(
+                    pr_mentions,
+                    direction=direction,
+                    task=task,
+                )
+
+            case "full-re-ranking":
+                return self._predict_frr(
+                    pr_mentions,
+                    direction=direction,
+                    task=task,
+                )
+
+        assert False
+
+    def _parse(self, ctx, output) -> list:
+        self._ctx_stats["parse_attempts"] += 1
+        raw_pr_mentions = self._safe_parse_answer(ctx, output)
+
+        if len(raw_pr_mentions) == 0:
+            self._ctx_stats["parse_errors"] += 1
+
+        match self.config.mode:
+            case "default":
+                return self._parse_default(raw_pr_mentions)
+
+            case "prompt-re-ranking":
+                return self._parse_prr(raw_pr_mentions)
+
+            case "full-re-ranking":
+                return self._parse_frr(raw_pr_mentions)
+
+        assert False
 
     def predict(
         self,
@@ -287,11 +474,9 @@ class Runner:
             tasks=islice(tasks.items(), self.config.task_limit),
         )
 
-        # ensure batched processing, however, it returns only after
-        # all generation is done (TODO stream processing?)
+        # ensure batched processing
         ctxs, gt = zip(*prompt_gen)
 
-        # TODO messy, hard to understand structure
         if not self.dry_run and self.config.mode != "ranker-results":
             if not self.re_evaluate:
                 outputs = self.model.prompt(ctx.prompt for ctx in ctxs)
@@ -318,249 +503,65 @@ class Runner:
         except AttributeError:
             ...
 
-        name2vid: dict[str, VID] = {
-            self.transform(self.ds.idmap.vid2str[vid].split(":")[1]): vid
-            for vid in self.ds.closed_vertices
-        }
-
-        preds = []
+        preds: Predictions = []
         for ctx, output, gt_vids in zip(ctxs, outputs, gt):
-            gt_mentions_transformed, gt_mentions = self._create_true_answer(
-                gt_vids,
-                mid2str_original,
-            )
 
             if not self.re_evaluate:
                 rep = {"ctx": asdict(ctx), "output": output}
                 self._ctx_model_answers.write(orjson.dumps(rep) + b"\n")  # type:ignore
 
+            # no LLM involved, just use pre-ranking
             if self.config.mode == "ranker-results":
-                raw_pr_vids: set[VID] = set()
-                scored_pr_vids: set[(tuple[VID, int])] = set()
-
-                top_n_vids = self.assembler.get_top_n_vids(
-                    direction=direction, task=ctx.task
-                )
-
-                score = self.config.n_candidates
-                for vid in top_n_vids:
-                    raw_pr_vids.add(vid)
-                    scored_pr_vids.add((vid, score))
-                    score -= 1
-
-                preds.append((ctx.task, [pair for pair in scored_pr_vids]))
-
+                preds = self._predict_rr(ctx, direction)
                 continue
+
+            # LLM involved, parse model answer
+
+            gt_mentions_transformed, gt_mentions = self._create_true_answer(
+                gt_vids,
+                mid2str_original,
+            )
 
             # dry run: oracle
+            pr_mentions: list[str]
+
             if self.dry_run:
                 pr_mentions = gt_mentions_transformed
-
             else:
-                self._ctx_stats["parse_attempts"] += 1
-                raw_pr_mentions = self._safe_parse_answer(ctx, output)
-
-                if len(raw_pr_mentions) == 0:
-                    self._ctx_stats["parse_errors"] += 1
-
-                match self.config.mode:
-                    case "default":
-                        pr_mentions = [
-                            self.transform(raw_pr_mention)
-                            for raw_pr_mention in raw_pr_mentions
-                        ]
-
-                    case "prompt-re-ranking":
-                        pr_mentions = [
-                            mention for mention in raw_pr_mentions if mention.isdigit()
-                        ]
-
-                    case "full-re-ranking":
-                        pr_mentions = [
-                            self.transform(raw_pr_mention)
-                            for raw_pr_mention in raw_pr_mentions
-                        ]
-
-                    case "ranker-results":
-                        pr_mentions = []
-
-            if not pr_mentions:  # type: ignore
-                preds.append((ctx.task, []))
-                continue
+                pr_mentions = self._parse(ctx, output)
 
             # obtain vertex predictions
-            # TODO upstream; ordered result lists
 
-            raw_pr_vids: set[VID] = set()
-            scored_pr_vids: set[(tuple[VID, int])] = set()
-            LOW_PRIORITY_SCORE: int = 1
-            HIGH_PRIORITY_SCORE: int = 2
-
-            additionally_proposed_names = []
-
-            match self.config.mode:
-                case "default":
-                    raw_pr_vids = set(
-                        vid
-                        for vid in self.ds.find_by_mention(
-                            *pr_mentions, splits=self.search_splits
-                        )
-                    )
-                    scored_pr_vids = set(
-                        (vid, LOW_PRIORITY_SCORE) for vid in raw_pr_vids
-                    )
-                    for mention in pr_mentions:
-                        if mention in name2vid:
-                            vid = name2vid[mention]
-                            raw_pr_vids.add(vid)
-                            if (vid, LOW_PRIORITY_SCORE) in scored_pr_vids:
-                                scored_pr_vids.remove(
-                                    (name2vid[mention], LOW_PRIORITY_SCORE,)
-                                )
-                            scored_pr_vids.add((name2vid[mention], HIGH_PRIORITY_SCORE,))
-
-                case "prompt-re-ranking":
-                    top_n_vids = self.assembler.get_top_n_vids(
-                        direction=direction, task=ctx.task
-                    )
-                    idxs = set(range(self.config.n_candidates))
-                    score = self.config.n_candidates
-
-                    for intdx in map(int, pr_mentions):
-                        if intdx < len(top_n_vids) and intdx in idxs:
-                            vid = top_n_vids[intdx]
-                            raw_pr_vids.add(vid)
-                            scored_pr_vids.add((vid, score - len(scored_pr_vids)))
-                            idxs.remove(intdx)
-
-                    for idx in idxs:
-                        raw_pr_vids.add(top_n_vids[idx])
-                        scored_pr_vids.add(
-                            (top_n_vids[idx], score - len(scored_pr_vids))
-                        )
-
-                case "full-re-ranking":
-                    top_n_vids = self.assembler.get_top_n_vids(
-                        direction=direction, task=ctx.task
-                    )
-                    top_n_entity_names: list[str] = [
-                        self.transform(self.ds.idmap.vid2str[vid].split(":")[1])
-                        for vid in top_n_vids
-                    ]
-                    mid_sets = self.assembler.get_n_mids_per_candidate(
-                        direction=direction, mid=ctx.task[0], rid=ctx.task[1]
-                    )
-
-                    redundant_names = set()
-                    for name in top_n_entity_names:
-                        redundant_names.add(name)
-                    for mid_set in mid_sets:
-                        for mid in mid_set:
-                            redundant_names.add(self.ds.idmap.mid2str[mid])
-
-                    idxs = set(range(self.config.n_candidates))
-                    score = self.config.n_candidates
-
-                    model_candidates = 0
-                    for pr in pr_mentions:
-                        if not pr.isdigit():
-                            model_candidates += 1
-
-                    score += model_candidates
-                    score *= 2
-
-                    for pr in pr_mentions:
-                        if pr.isdigit():
-                            intdx = int(pr)
-                            if intdx < len(top_n_vids) and intdx in idxs:
-                                vid = top_n_vids[intdx]
-                                if vid not in raw_pr_vids:
-                                    raw_pr_vids.add(vid)
-                                    scored_pr_vids.add((vid, score))
-                                idxs.remove(intdx)
-                        else:
-                            # not using a set so I keep the order
-                            if (
-                                pr not in redundant_names
-                                and pr not in additionally_proposed_names
-                            ):
-                                additionally_proposed_names.append(pr)
-
-                            if pr in name2vid:
-                                vid = name2vid[pr]
-                                if vid not in raw_pr_vids:
-                                    raw_pr_vids.add(vid)
-                                    scored_pr_vids.add((name2vid[pr], score))
-
-                            vids = self.ds.find_by_mention(
-                                pr,
-                                splits=self.search_splits,
-                            )
-                            for vid in vids:
-                                if vid not in raw_pr_vids:
-                                    raw_pr_vids.add(vid)
-                                    scored_pr_vids.add((vid, score - 1))
-
-                        score -= 2
-
-                    for idx in idxs:
-                        if top_n_vids[idx] not in raw_pr_vids:
-                            raw_pr_vids.add(top_n_vids[idx])
-                            scored_pr_vids.add(
-                                (
-                                    top_n_vids[idx],
-                                    score - len(scored_pr_vids),
-                                )
-                            )
-
-                    top_n_vids = self.assembler.get_top_n_vids(
-                        direction=direction, task=ctx.task, n=50
-                    )
-                    for i in range(50):
-                        if top_n_vids[i] not in raw_pr_vids:
-                            raw_pr_vids.add(top_n_vids[i])
-                            scored_pr_vids.add(
-                                (
-                                    top_n_vids[i],
-                                    score - len(scored_pr_vids),
-                                )
-                            )
+            pr_vids: Sequence[Sequence[VID]]
+            pr_vids = self._predict(
+                pr_mentions,
+                direction,
+                ctx.task,
+            )
 
             # assign scores
-            preds.append((ctx.task, [pair for pair in scored_pr_vids]))
+
+            scored = enumerate(pr_vids[::-1])
+            scored = [(score, vid) for score, vids in scored for vid in vids]
+            preds.append((ctx.task, scored))
 
             # --- logging
 
-            if self.config.mode == "full-re-ranking":
-                self._trace(
-                    "-" * 80,
-                    "\n  -".join(f"{k}: {v}" for k, v in asdict(ctx).items()),
-                    f"model output: {output}",
-                    f"transformed parsed mentions: {', '.join(pr_mentions)}",
-                    f"additional proposed vertices: {', '.join(additionally_proposed_names)}",
-                    f"true mentions: {', '.join(gt_mentions)}",
-                    f"transformed true mentions: {', '.join(gt_mentions_transformed)}",
-                    f"proposed vertices: {', '.join(self.ds.vertices[vid] for vid in raw_pr_vids)}",
-                    f"true vertices: {', '.join(self.ds.vertices[vid] for vid in gt_vids)}",
-                    f"{len(gt_vids & raw_pr_vids)}/{len(gt_vids)} vids are correct",
-                    f"{len(raw_pr_vids - gt_vids)} are incorrectly predicted vertices",
-                    "\n",
-                )
-            else:
-                self._trace(
-                    "-" * 80,
-                    "\n  -".join(f"{k}: {v}" for k, v in asdict(ctx).items()),
-                    f"model output: {output}",
-                    f"parsed mentions: {', '.join(pr_mentions)}",
-                    f"transformed parsed mentions: {', '.join(pr_mentions)}",
-                    f"true mentions: {', '.join(gt_mentions)}",
-                    f"transformed true mentions: {', '.join(gt_mentions_transformed)}",
-                    f"proposed vertices: {', '.join(self.ds.vertices[vid] for vid in raw_pr_vids)}",
-                    f"true vertices: {', '.join(self.ds.vertices[vid] for vid in gt_vids)}",
-                    f"{len(gt_vids & raw_pr_vids)}/{len(gt_vids)} vids are correct",
-                    f"{len(raw_pr_vids - gt_vids)} are incorrectly predicted vertices",
-                    "\n",
-                )
+            self._trace(
+                "-" * 80,
+                "\n  -".join(f"{k}: {v}" for k, v in asdict(ctx).items()),
+                f"model output: {output}",
+                f"transformed parsed mentions: {', '.join(pr_mentions)}",
+                # TODO
+                # f"additional proposed vertices: {', '.join(additionally_proposed_names)}",
+                f"true mentions: {', '.join(gt_mentions)}",
+                f"transformed true mentions: {', '.join(gt_mentions_transformed)}",
+                f"proposed vertices: {', '.join(self.ds.vertices[vid] for vid in set(pr_vids))}",
+                f"true vertices: {', '.join(self.ds.vertices[vid] for vid in gt_vids)}",
+                f"{len(gt_vids & set(pr_vids))}/{len(gt_vids)} vids are correct",
+                f"{len(set(pr_vids) - gt_vids)} are incorrectly predicted vertices",
+                "\n",
+            )
 
         # restore state
         self.ds.idmap.mid2str = mid2str_original
@@ -568,6 +569,13 @@ class Runner:
         return preds
 
     def predict_all(self) -> dict:
+
+        # TODO maybe use post_init
+        self.name2vid: dict[str, VID] = {
+            self.transform(self.ds.idmap.vid2str[vid].split(":")[1]): vid
+            for vid in self.ds.closed_vertices
+        }
+
         result = {}
         for direction in ("head", "tail"):
             self._trace(f"running predict() for {direction} tasks")

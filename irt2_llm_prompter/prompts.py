@@ -1,18 +1,18 @@
-from ast import Tuple
-from operator import contains
 import pickle
+from ast import Tuple
 from dataclasses import dataclass
 from itertools import islice
+from operator import contains
 from pathlib import Path
 from typing import Literal
 
 import h5py
 import numpy as np
-from torch import TupleType
 import yaml
 from irt2.dataset import IRT2
 from irt2.types import MID, RID, VID, Split
 from ktz.collections import path
+from torch import TupleType
 
 Tasks = dict[tuple[MID, RID], set[VID]]
 
@@ -73,7 +73,10 @@ class Assembler:
         rid: RID,
     ) -> list[set[MID]]:
 
-        top_n_score_vids = self.get_top_n_vids(direction=direction, task=(mid, rid))
+        top_n_score_vids = self.get_top_n_vids(
+            direction=direction,
+            task=(mid, rid),
+        )
 
         mid_sets = []
 
@@ -90,13 +93,11 @@ class Assembler:
 
         return mid_sets
 
-    def get_top_n_vids(
+    def get_ranked_vids(
         self,
         direction: Literal["head", "tail"],
         task: tuple[MID, RID],
-        n: int | None = None,
     ) -> list[int]:
-
         if "IRT2" in self.dataset_name:
             assert self.mid2idx is not None
             idx = self.mid2idx.get(task[0])
@@ -104,31 +105,41 @@ class Assembler:
                 return []
             task = (idx, task[1])
 
-        scores = self._get_scores_for_direction(direction=direction, task=task)
+        scores = self._get_scores_for_direction(
+            direction=direction,
+            task=task,
+        )
 
         if scores is None:
             return []
 
+        if "IRT2" in self.dataset_name:
+            scores = np.argsort(scores)[::-1]
+
+        return list(map(int, scores))
+
+    def get_top_n_vids(
+        self,
+        *args,
+        n: int | None = None,
+        **kwargs,
+    ) -> list[int]:
         if n is None:
             n = self.n_candidates
-
-        if "IRT2" in self.dataset_name:
-            breakpoint()
-            return list(np.argsort(scores)[::-1][:n])
-
-        return scores[:n]
+        return self.get_ranked_vids(*args, **kwargs)[:n]
 
     def _get_scores_for_direction(
         self,
         direction: Literal["head", "tail"],
         task: tuple[int, int],
     ):
-        dic = dict(
-            head=self.scores_head,
-            tail=self.scores_tail,
-        )
+        assert self.scores_head
+        assert self.scores_tail
 
-        return dic[task]
+        if direction == "head":
+            return self.scores_head.get(task)
+        else:
+            return self.scores_tail.get(task)
 
     def assemble(
         self,
