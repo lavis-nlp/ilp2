@@ -24,6 +24,10 @@ bitsandbytes = "^0.45.0"
 
 [tool.poetry.group.dev.dependencies]
 ipython = "^8.24.0"
+black = "^25.1.0"
+pretty-errors = "^1.2.25"
+pyright = "^1.1.400"
+isort = "^6.0.1"
 
 
 [build-system]
