@@ -297,14 +297,19 @@ class Runner:
         return list(map(self.transform, raw_pr_mentions))
 
     def _predict_default(self, pr_mentions: list) -> Sequence:
-        named = {
-            self.name2vid[mention]
-            for mention in pr_mentions
-            if mention in self.name2vid
-        }
-
         # retain order of proposals
-        known, hi, lo = set(), [], []
+        known, named = set(), []
+        for mention in pr_mentions:
+            if mention not in self.name2vid:
+                continue
+            vid = self.name2vid[mention]
+            if vid in known:
+                continue
+
+            known.add(vid)
+            named.append([vid])
+
+        mentioned = []
         for mention in pr_mentions:
             found: set[VID] = self.ds.find_by_mention(
                 mention,
@@ -312,14 +317,10 @@ class Runner:
             )
 
             found -= known
-            for vid in found:
-                if vid in named:
-                    hi.append(vid)
-                else:
-                    lo.append(vid)
-
+            mentioned.append(list(found))
             known |= found
-        return hi, lo
+
+        return named + mentioned
 
     # mode: prompt re-ranking
     #  - model gets N pre-ranked entities
@@ -415,9 +416,9 @@ class Runner:
     def _predict_rr(self, ctx, direction) -> tuple[Task, list[tuple[float, VID]]]:
         preranked_vids = self.assembler.get_ranked_vids(
             direction=direction,
-            task=ctx,
+            task=ctx.task,
         )
-        return ctx.task, list(enumerate(preranked_vids[::-1]))
+        return [(vid, score) for score, vid in enumerate(preranked_vids[::-1])]
 
     # modes in which model answers are parsed
     def _predict(self, pr_mentions, direction, task):
@@ -467,6 +468,7 @@ class Runner:
         tasks: Tasks,
         direction: Literal["head", "tail"],
     ) -> Predictions:
+
         # generator chain for batched processing
 
         prompt_gen = self._prompt_gen(
@@ -512,7 +514,7 @@ class Runner:
 
             # no LLM involved, just use pre-ranking
             if self.config.mode == "ranker-results":
-                preds = self._predict_rr(ctx, direction)
+                preds.append((ctx.task, self._predict_rr(ctx, direction)))
                 continue
 
             # LLM involved, parse model answer
@@ -530,8 +532,10 @@ class Runner:
             else:
                 pr_mentions = self._parse(ctx, output)
 
-            # obtain vertex predictions
+            # if ctx.task == (13408, 2):
+            #     breakpoint()
 
+            # obtain vertex predictions
             pr_vids: Sequence[Sequence[VID]]
             pr_vids = self._predict(
                 pr_mentions,
@@ -539,15 +543,14 @@ class Runner:
                 ctx.task,
             )
 
-            # assign scores
-
+            # assign scores (removes empty lists)
             scored = enumerate(filter(len, pr_vids[::-1]))
-            scored = [(score, vid) for score, vids in scored for vid in vids]
+            scored = [(vid, score) for score, vids in scored for vid in vids]
             preds.append((ctx.task, scored))
 
-            # --- logging
-
-            _trace_pr_vids = [self.ds.vertices[vid] for vids in pr_vids for vid in vids]
+            k = 10
+            topk = sorted(scored, key=lambda t: t[1], reverse=True)[:k]
+            scored_fmt = [f"{score}:{self.ds.vertices[vid]}" for vid, score in topk]
 
             self._trace(
                 "-" * 80,
@@ -558,10 +561,10 @@ class Runner:
                 # f"additional proposed vertices: {', '.join(additionally_proposed_names)}",
                 f"true mentions: {', '.join(gt_mentions)}",
                 f"transformed true mentions: {', '.join(gt_mentions_transformed)}",
-                f"proposed vertices: {', '.join(_trace_pr_vids)}",
-                f"true vertices: {', '.join(self.ds.vertices[vid] for vid in gt_vids)}",
-                f"{len(gt_vids & set(pr_vids))}/{len(gt_vids)} vids are correct",
-                f"{len(set(pr_vids) - gt_vids)} are incorrectly predicted vertices",
+                f"scored vertices (top-{k}): {', '.join(scored_fmt)}",
+                f"true vertices (top-{k}): {', '.join(self.ds.vertices[vid] for vid in gt_vids)}",
+                f"{len(gt_vids & set(topk))}/{len(gt_vids)} vids are correct",
+                f"{len(set(gt_vids) - set(gt_vids))} are incorrectly predicted vertices",
                 "\n",
             )
 
@@ -594,6 +597,7 @@ class Runner:
         ilp.console.log("result stats:", result["stats"])
 
         return result
+
 
 
 def run(
