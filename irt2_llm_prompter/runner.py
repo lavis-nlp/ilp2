@@ -337,13 +337,12 @@ class Runner:
         direction: Literal["head", "tail"],
         task: Task,
     ) -> Sequence:
-
         preranked_vids = self.assembler.get_ranked_vids(
             direction=direction,
             task=task,
         )
 
-        vids = []
+        known, vids = set(), []
         for idx in map(int, pr_mentions):
             # only allow proposed
             if idx > self.config.n_candidates:
@@ -351,11 +350,15 @@ class Runner:
 
             # assuming they are proposed with index 0
             vid = preranked_vids[idx]
+
+            # skip duplicates
+            if vid in known:
+                continue
+
             vids.append([vid])
+            known.add(vid)
 
-        known = set(vids)
         vids += list([vid] for vid in preranked_vids if vid not in known)
-
         return vids
 
     # mode: full re-ranking
@@ -368,14 +371,12 @@ class Runner:
         direction: Literal["head", "tail"],
         task: Task,
     ):
-
         preranked_vids = self.assembler.get_ranked_vids(
             direction=direction,
             task=task,
         )
 
         known, vids = set(), []
-
         for pred in pr_mentions:
             # (1) model referenced pre-ranker list
             if pred.isdigit():
@@ -383,13 +384,19 @@ class Runner:
                 if idx > self.config.n_candidates:
                     continue
 
-                vid = vids.append(preranked_vids[idx])
+                vid = preranked_vids[idx]
+                if vid in known:
+                    continue
+
                 vids.append([vid])
                 known.add(vid)
                 continue
 
             # (2) try to look up by name
             vid = self.name2vid.get(pred)
+            if vid in known:
+                continue
+
             if vid is not None:
                 vids.append([vid])
                 known.add(vid)
@@ -401,15 +408,12 @@ class Runner:
                 splits=self.search_splits,
             )
             matched_vids -= known
-            known |= matched_vids
+
             vids.append(list(matched_vids))
+            known |= matched_vids
 
         # append remaining pre-ranked candidates
-        for vid in preranked_vids:
-            if vid in known:
-                continue
-            vids.append([vid])
-
+        vids += list([vid] for vid in preranked_vids if vid not in known)
         return vids
 
     # mode: ranker-results
@@ -557,8 +561,7 @@ class Runner:
                 "\n  -".join(f"{k}: {v}" for k, v in asdict(ctx).items()),
                 f"model output: {output}",
                 f"transformed parsed mentions: {', '.join(pr_mentions)}",
-                # TODO
-                # f"additional proposed vertices: {', '.join(additionally_proposed_names)}",
+                # f"additional proposed vertices: {', '.join(additionally_proposed_names)}",  TODO
                 f"true mentions: {', '.join(gt_mentions)}",
                 f"transformed true mentions: {', '.join(gt_mentions_transformed)}",
                 f"scored vertices (top-{k}): {', '.join(scored_fmt)}",
@@ -597,7 +600,6 @@ class Runner:
         ilp.console.log("result stats:", result["stats"])
 
         return result
-
 
 
 def run(
