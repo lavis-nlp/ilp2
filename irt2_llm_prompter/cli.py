@@ -84,6 +84,12 @@ def main(quiet: bool, debug: bool):
     default=1,
 )
 @click.option(
+    "--gpu-memory-utilization",
+    type=float,
+    required=False,
+    default=1.0,
+)
+@click.option(
     "--prompt-template",
     type=str,
     required=True,
@@ -199,11 +205,6 @@ def main(quiet: bool, debug: bool):
     is_flag=True,
     help="use ground truth mentions as candidates",
 )
-@click.option(
-    "--include-vertex-name",
-    is_flag=True,
-    help="includes the vertex name in prompt-re-ranking-candidates",
-)
 @click.option("--sampling-temperature", type=float)
 @click.option("--sampling-top-p", type=float)
 @click.option("--sampling-use-beam-search", type=bool)
@@ -216,6 +217,7 @@ def run_experiment(
     mode: Literal["default", "prompt-re-ranking", "full-re-ranking", "ranker-results"],
     model: str,
     tensor_parallel_size: int,
+    gpu_memory_utilization: float,
     prompt_template: str,
     system_prompt: str,
     question_template: str,
@@ -235,7 +237,6 @@ def run_experiment(
     output_prefix: str,
     dry_run: bool = False,
     give_true_candidates: bool = False,
-    include_vertex_name: bool = False,
     **sampling_params,
 ):
     config = Config(
@@ -249,9 +250,10 @@ def run_experiment(
         dataset_texts_tail=texts_tail,
         # model related
         model_path=model,
-        tensor_parallel_size=tensor_parallel_size,
         parser=parser,
         engine=engine,
+        tensor_parallel_size=tensor_parallel_size,
+        gpu_memory_utilization=gpu_memory_utilization,
         batch_size=batch_size,
         dtype=dtype,
         # cleanup
@@ -261,7 +263,6 @@ def run_experiment(
         n_candidates=n_candidates,
         mentions_per_candidate=mentions_per_candidate,
         give_true_candidates=give_true_candidates,
-        include_vertex_name=include_vertex_name,
         # prompt related
         prompt_template_path=prompt_template,
         prompt_system_path=system_prompt,

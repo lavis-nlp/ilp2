@@ -41,7 +41,6 @@ class Assembler:
     n_candidates: int
     mid2idx: dict[int, int] | None
     mentions_per_candidate: int
-    include_vertex_name: bool
 
     def _assemble_text(
         self,
@@ -165,27 +164,19 @@ class Assembler:
                     for mid in list(mid_set)[: self.mentions_per_candidate]
                 )
             else:
+                top_n_vids = self.get_top_n_vids(
+                    direction=direction, task=(mid, rid)
+                )
 
-                if self.include_vertex_name:
-                    top_n_vids = self.get_top_n_vids(
-                        direction=direction, task=(mid, rid)
-                    )
+                top_n_entity_names: list[str] = [
+                    self.dataset.idmap.vid2str[vid].split(":")[1]
+                    for vid in top_n_vids
+                ]
 
-                    top_n_entity_names: list[str] = [
-                        self.dataset.idmap.vid2str[vid].split(":")[1]
-                        for vid in top_n_vids
-                    ]
-
-                    candidates = "\n".join(
-                        f"{i}: {top_n_entity_names[i]}, {', '.join(self.dataset.idmap.mid2str[mid] for mid in list(mid_set)[:self.mentions_per_candidate])}"
-                        for i, mid_set in enumerate(mid_sets)
-                    )
-
-                else:
-                    candidates = "\n".join(
-                        f"{i}: {', '.join(self.dataset.idmap.mid2str[mid] for mid in list(mid_set)[:self.mentions_per_candidate])}"
-                        for i, mid_set in enumerate(mid_sets)
-                    )
+                candidates = "\n".join(
+                    f"{i}: {top_n_entity_names[i]}, {', '.join(self.dataset.idmap.mid2str[mid] for mid in list(mid_set)[:self.mentions_per_candidate])}"
+                    for i, mid_set in enumerate(mid_sets)
+                )
 
                 candidates.replace(",\n", "\n")
 
@@ -224,7 +215,6 @@ class Assembler:
         texts_tail_path: str | Path | None = None,
         n_candidates: int = 0,
         mentions_per_candidate: int = 1,
-        include_vertex_name: bool = False,
     ):
         with (
             path(template_path, is_file=True).open(mode="r") as tmpl_fd,
@@ -321,5 +311,4 @@ class Assembler:
             n_candidates=n_candidates,
             mid2idx=mid2idx,
             mentions_per_candidate=mentions_per_candidate,
-            include_vertex_name=include_vertex_name,
         )

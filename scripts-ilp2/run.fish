@@ -3,10 +3,11 @@ function run_experiments
         for dataset in $datasets
             set output_prefix "$mode-"(echo $dataset- | sed 's|/|_|')
 
-            poetry run ilp run-experiment \
+            poetry run ilp $debug run-experiment \
                 --split $split \
                 --model $model \
-                --tensor-parallel-size 4 \
+                --tensor-parallel-size $tensor_parallel_size \
+                --gpu-memory-utilization $gpu_memory_utilization \
                 --prompt-template $prompt_template \
                 --system-prompt $system_prompt \
                 --question-template $question_template \
@@ -18,7 +19,7 @@ function run_experiments
                 --mentions-per-candidate $mentions_per_candidate \
                 --engine $engine \
                 --dtype $dtype \
-                --mode $mode $include_vertex_name \
+                --mode $mode \
                 --output-prefix $output_prefix \
                 $argv
         end

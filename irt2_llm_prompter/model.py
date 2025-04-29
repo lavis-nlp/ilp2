@@ -8,7 +8,8 @@ import re
 from click import prompt
 import orjson
 from traitlets import default
-from vllm import LLM, SamplingParams
+from vllm import LLM
+from vllm.sampling_params import SamplingParams, BeamSearchParams
 
 from transformers import (
     AutoModelForCausalLM,
@@ -73,6 +74,7 @@ class ModelBase:
     tensor_parallel_size: int
     parser: Literal["json", "csv"]
 
+    # TODO antipattern
     @classmethod
     def from_config(cls, config):
         match config.engine:
@@ -100,35 +102,55 @@ class ModelBase:
 
 class VLLMModel(ModelBase):
     llm: LLM | None = None
-    params: SamplingParams
+    params: SamplingParams | BeamSearchParams
+    use_beam_search: bool
+    gpu_memory_utilization: float # 0 <= x <= 1
 
     def __init__(
         self,
         path: str,
         tensor_parallel_size: int,
+            gpu_memory_utilization: float,
         parser: Literal["json", "csv"],
-        sampling_params: SamplingParams,
+        use_beam_search: bool,
+        params: SamplingParams | BeamSearchParams,
     ):
         super().__init__(path, tensor_parallel_size, parser)
-        self.params = sampling_params
+        self.params = params
+
+        if use_beam_search:
+            assert False, 'disabled for now'
+
+        self.use_beam_search = use_beam_search
+        self.gpu_memory_utilization = gpu_memory_utilization
 
     @classmethod
     def from_config(cls, config):
+        # either
+        if not config.use_beam_search:
+            # params = SamplingParams(
+            #     temperature=config.temperature,
+            #     top_p=config.top_p,
+            #     best_of=config.best_of,
+            #     max_tokens=config.max_tokens,
+            #     repetition_penalty=config.repetition_penalty,
+            # )
+            params = SamplingParams()
 
-        sampling_params = SamplingParams(
-            temperature=config.temperature,
-            top_p=config.top_p,
-            use_beam_search=config.use_beam_search,
-            best_of=config.best_of,
-            max_tokens=config.max_tokens,
-            repetition_penalty=config.repetition_penalty,
-        )
+        else:
+            params = BeamSearchParams(
+                beam_width=config.best_of,
+                max_tokens=config.max_tokens,
+                length_penalty=config.repetition_penalty,  # TODO add to config as bs param
+            )
 
         return cls(
             path=str(config.model_path),
             tensor_parallel_size=config.tensor_parallel_size,
+            gpu_memory_utilization=config.gpu_memory_utilization,
             parser=config.parser,
-            sampling_params=sampling_params,
+            params=params,
+            use_beam_search=config.use_beam_search,
         )
 
     def load(self):
@@ -140,6 +162,7 @@ class VLLMModel(ModelBase):
         self.llm = LLM(
             model=self.path,
             tensor_parallel_size=self.tensor_parallel_size,
+            gpu_memory_utilization=self.gpu_memory_utilization,
         )
 
         ilp.console.log("Finished loading vLLM model")
@@ -151,6 +174,19 @@ class VLLMModel(ModelBase):
 
         promptlist = list(prompts)
         assert len(promptlist)
+
+        if self.use_beam_search:
+            outputs = self.llm.beam_search(
+                prompts=[{'prompt': p} for p in promptlist],
+                params=self.params,
+                # disabled by default in the current version
+                # use_tqdm=not ilp.debug,
+            )
+
+            for output in outputs:
+                yield output.sequences[0].text
+
+            return
 
         outputs = self.llm.generate(
             prompts=promptlist,
@@ -179,6 +215,7 @@ class HuggingFaceModel(ModelBase):
         dtype: torch.dtype,
         batch_size: int,
     ):
+        assert False, 'adjust to new config'
         super().__init__(path, tensor_parallel_size, parser)
         self.model_kwargs = model_kwargs
         self.dtype = dtype
@@ -189,16 +226,16 @@ class HuggingFaceModel(ModelBase):
 
         model_kwargs = {
             "max_new_tokens": config.max_tokens,
-            "do_sample": not config.use_beam_search,
+            # "do_sample": not config.use_beam_search,
             "top_p": config.top_p,
             "repetition_penalty": config.repetition_penalty,
         }
 
-        if model_kwargs["do_sample"]:
-            model_kwargs["temperature"] = config.temperature
-        else:
-            model_kwargs["num_beams"] = config.best_of
-            model_kwargs["temperature"] = None
+        # if model_kwargs["do_sample"]:
+        #     model_kwargs["temperature"] = config.temperature
+        # else:
+        #     model_kwargs["num_beams"] = config.best_of
+        #     model_kwargs["temperature"] = None
 
         return cls(
             path=str(config.model_path),

@@ -9,8 +9,8 @@ readme = "README.md"
 ilp = "irt2_llm_prompter.cli:entry"
 
 [tool.poetry.dependencies]
-python = "^3.11"
-vllm = "0.6.2"
+python = ">=3.11,<3.13"
+vllm = "^0.8.5"
 click = "^8.1.7"
 rich-click = "^1.8.2"
 pretty-errors = "^1.2.25"

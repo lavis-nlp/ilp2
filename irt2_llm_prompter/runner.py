@@ -44,10 +44,13 @@ class Config:
 
     # model configuration
     model_path: str
-    tensor_parallel_size: int
     parser: Literal["json", "csv"]
     engine: Literal["vllm", "huggingface"]
     dtype: Literal["float16", "bfloat16", "float32"]
+
+    # vllm model params
+    tensor_parallel_size: int
+    gpu_memory_utilization: float
 
     # prompt templates
     prompt_template_path: str  # conf/prompts/template
@@ -62,15 +65,14 @@ class Config:
     n_candidates: int = 0  # top n candidates given to the model
     mentions_per_candidate: int = 1  # mentions per candidate proposed to the model
     give_true_candidates: bool = False
-    include_vertex_name: bool = False
     use_ranker_results: bool = False
 
     # sampling params (beam search)
-    use_beam_search: bool = True
+    use_beam_search: bool = False
     early_stopping: bool = False  # must be False for random sampling
     best_of: int = 2  # must be 1 for greedy sampling (t=0)
 
-    # sampling params (random sampling)
+    # sampling params (random sampling) if use_beam_search is False
     temperature: float = 0  # greedy if beam_search is False and set to 0
     top_p: float = 1.0  # consider tokens until their cum. prob. reaches
     repetition_penalty: float = 1.0  # penalize new tokens if they appeared before
@@ -538,6 +540,7 @@ class Runner:
 
             # if ctx.task == (13408, 2):
             #     breakpoint()
+            # breakpoint()
 
             # obtain vertex predictions
             pr_vids: Sequence[Sequence[VID]]
@@ -671,7 +674,6 @@ def run(
         texts_tail_path=config.dataset_texts_tail,
         n_candidates=config.n_candidates,
         mentions_per_candidate=config.mentions_per_candidate,
-        include_vertex_name=config.include_vertex_name,
     )
 
     runner = Runner(
