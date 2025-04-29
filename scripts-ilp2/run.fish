@@ -1,26 +1,9 @@
 function run_experiments
     for n_cand in $n_cands
         for dataset in $datasets
-            set output_prefix "$mode-$dataset-"
+            set output_prefix "$mode-"(echo $dataset- | sed 's|/|_|')
 
-            if begin
-                    test "$mode" = prompt-re-ranking
-                    or test "$mode" = full-re-ranking
-                    or test "$mode" = ranker-results
-                end
-
-                set output_prefix "$output_prefix$n_cand-"
-
-                if test -n "$vertex_name"
-                    set output_prefix "$output_prefixv-"
-                end
-            end
-
-            if set -q output_suffix
-                set output_prefix "$output_prefix$output_suffix-"
-            end
-
-            echo poetry run ilp run-experiment \
+            poetry run ilp run-experiment \
                 --split $split \
                 --model $model \
                 --tensor-parallel-size 4 \

@@ -17,7 +17,5 @@ set vertex_name --include-vertex-name
 set n_cands 0 # 5 10 15 20
 set mentions_per_candidate 10
 
-set output_suffix $split
-
 . $root/run.fish
 run_experiments $argv
