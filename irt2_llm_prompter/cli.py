@@ -15,7 +15,7 @@ import rich_click as click
 from ktz.collections import path
 
 import irt2_llm_prompter as ilp
-from irt2_llm_prompter.model import ModelBase, VLLMModel
+from irt2_llm_prompter.model import ModelBase
 from irt2_llm_prompter.runner import Config, run
 
 os.environ["PYTHONBREAKPOINT"] = "pudb.set_trace"

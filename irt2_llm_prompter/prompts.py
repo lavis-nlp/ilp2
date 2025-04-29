@@ -249,9 +249,13 @@ class Assembler:
 
                 if "IRT2" in dataset_name:
                     scores_path = next(
-                        dataset.path.glob(f"*scores.{split_str}.h5"), None
+                        dataset.path.glob(f"*scores.{split_str}.h5"),
+                        None,
                     )
-                    mid2idx_path = next(dataset.path.glob("mid2idx-irt2-*.pkl"), None)
+                    mid2idx_path = next(
+                        dataset.path.glob("mid2idx-irt2-*.pkl"),
+                        None,
+                    )
 
                     if mid2idx_path:
                         with open(mid2idx_path, "rb") as file:
