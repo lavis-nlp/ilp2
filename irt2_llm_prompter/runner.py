@@ -16,6 +16,7 @@ from irt2.dataset import IRT2
 from irt2.evaluation import Predictions, Scores, evaluate
 from irt2.types import MID, RID, VID, IDMap, Split, Task
 from ktz.collections import dflat, path
+from rich.progress import track
 
 import irt2_llm_prompter as ilp
 from irt2_llm_prompter.model import ModelBase, VLLMModel
@@ -46,6 +47,7 @@ class Config:
     model_path: str
     parser: Literal["json", "csv"]
     engine: Literal["vllm", "huggingface"]
+    quantization: Literal['fp8']
     dtype: Literal["float16", "bfloat16", "float32"]
 
     # vllm model params
@@ -68,14 +70,17 @@ class Config:
     use_ranker_results: bool = False
 
     # sampling params (beam search)
-    use_beam_search: bool = False
-    early_stopping: bool = False  # must be False for random sampling
-    best_of: int = 2  # must be 1 for greedy sampling (t=0)
+    use_beam_search: bool = True
+    beam_width: int = 2  # gets expensive fast
+    length_penalty: float = 1.0
 
     # sampling params (random sampling) if use_beam_search is False
-    temperature: float = 0  # greedy if beam_search is False and set to 0
+    early_stopping: bool = False  # must be False for random sampling
     top_p: float = 1.0  # consider tokens until their cum. prob. reaches
     repetition_penalty: float = 1.0  # penalize new tokens if they appeared before
+
+    # sampling params (shared)
+    temperature: float = 0  # greedy if beam_search is False and set to 0
 
     max_tokens: int = 512
     batch_size: int = 100
@@ -512,7 +517,18 @@ class Runner:
             ...
 
         preds: Predictions = []
-        for ctx, output, gt_vids in zip(ctxs, outputs, gt):
+
+        # load model before tracking starts
+        self.model.load()
+
+        zipped = zip(ctxs, outputs, gt)
+        tracked = track(
+            zipped,
+            description=direction,
+            total=len(ctxs),
+        )
+
+        for ctx, output, gt_vids in tracked:
 
             if not self.re_evaluate:
                 rep = {"ctx": asdict(ctx), "output": output}
@@ -540,7 +556,6 @@ class Runner:
 
             # if ctx.task == (13408, 2):
             #     breakpoint()
-            # breakpoint()
 
             # obtain vertex predictions
             pr_vids: Sequence[Sequence[VID]]

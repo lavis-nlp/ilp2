@@ -151,6 +151,13 @@ def main(quiet: bool, debug: bool):
     help="optional, set batch size for huggingface engine",
 )
 @click.option(
+    "--quantization",
+    type=click.Choice(["fp8"], case_sensitive=False),
+    default=None,
+    show_default=True,
+    help="optional, specify quantization technique for model weights",
+)
+@click.option(
     "--dtype",
     type=click.Choice(["float16", "bfloat16", "float32"], case_sensitive=False),
     default="bfloat16",
@@ -228,6 +235,7 @@ def run_experiment(
     parser: Literal["json", "csv"],
     engine: Literal["vllm", "huggingface"],
     batch_size: int,
+    quantization: Literal['fp8'] | None,  # or other
     dtype: Literal["float16", "bfloat16", "float32"],
     stopwords_path: str | None,
     use_stemmer: bool,
@@ -255,6 +263,7 @@ def run_experiment(
         tensor_parallel_size=tensor_parallel_size,
         gpu_memory_utilization=gpu_memory_utilization,
         batch_size=batch_size,
+        quantization=quantization,
         dtype=dtype,
         # cleanup
         stopwords_path=stopwords_path,

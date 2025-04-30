@@ -1,10 +1,11 @@
 #!/usr/bin/env fish
 
 set root (dirname (status -f))
+set debug # -qd
 
-. $root/config-env.fish
 . $root/config-dataset-irt.fish
-. $root/config-model-llama.fish
+. $root/config-model-deepseek.fish
+# . $root/config-model-llama.fish
 
 set split validation
 set mode default

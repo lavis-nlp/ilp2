@@ -18,6 +18,7 @@ function run_experiments
                 --n-candidates $n_cand \
                 --mentions-per-candidate $mentions_per_candidate \
                 --engine $engine \
+                $quantization \
                 --dtype $dtype \
                 --mode $mode \
                 --output-prefix $output_prefix \
