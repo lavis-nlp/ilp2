@@ -1368,6 +1368,21 @@ testing = ["covdefaults (>=2.3)", "coverage (>=7.6.10)", "diff-cover (>=9.2.1)",
 typing = ["typing-extensions (>=4.12.2)"]
 
 [[package]]
+name = "flashinfer-python"
+version = "0.2.2.post1"
+description = "FlashInfer: Kernel Library for LLM Serving"
+optional = false
+python-versions = "<4.0,>=3.8"
+files = [
+    {file = "flashinfer_python-0.2.2.post1.tar.gz", hash = "sha256:a4ad2100c457e9b3e211f6b0ff7bc36d969c708b2fe90541f57ddab2c86aae6f"},
+]
+
+[package.dependencies]
+ninja = "*"
+numpy = "*"
+torch = "*"
+
+[[package]]
 name = "fonttools"
 version = "4.57.0"
 description = "Tools to manipulate font files"
@@ -7349,4 +7364,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<3.13"
-content-hash = "04f906617ba6f631bd6952a4a789a5ba9e13a47c4f1256b8a401dbfe940be17d"
+content-hash = "9ffc392a8c085b40fa0ec0bb474dfbc6782768505479bfc8a16031447782ad63"

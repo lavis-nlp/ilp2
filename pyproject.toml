@@ -21,6 +21,7 @@ h5py = "^3.12.1"
 pystemmer = "^2.2.0.3"
 autoawq = "^0.2.7.post2"
 bitsandbytes = "^0.45.0"
+flashinfer-python = "<0.2.3"
 
 [tool.poetry.group.dev.dependencies]
 ipython = "^8.24.0"
