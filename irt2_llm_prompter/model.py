@@ -110,7 +110,8 @@ class VLLMModel(ModelBase):
         self,
         path: str,
         tensor_parallel_size: int,
-            gpu_memory_utilization: float,
+        gpu_memory_utilization: float,
+        quantization: str,
         parser: Literal["json", "csv"],
         use_beam_search: bool,
         params: SamplingParams | BeamSearchParams,
@@ -118,28 +119,25 @@ class VLLMModel(ModelBase):
         super().__init__(path, tensor_parallel_size, parser)
         self.params = params
 
-        if use_beam_search:
-            assert False, 'disabled for now'
-
         self.use_beam_search = use_beam_search
         self.gpu_memory_utilization = gpu_memory_utilization
+        self.quantization = quantization
 
     @classmethod
     def from_config(cls, config):
         # either
         if not config.use_beam_search:
-            # params = SamplingParams(
-            #     temperature=config.temperature,
-            #     top_p=config.top_p,
-            #     best_of=config.best_of,
-            #     max_tokens=config.max_tokens,
-            #     repetition_penalty=config.repetition_penalty,
-            # )
-            params = SamplingParams()
+            params = SamplingParams(
+                temperature=config.temperature,
+                top_p=config.top_p,
+                best_of=config.best_of, # TODO deprecated?
+                max_tokens=config.max_tokens,
+                repetition_penalty=config.repetition_penalty,
+            )
 
         else:
             params = BeamSearchParams(
-                beam_width=config.best_of,
+                beam_width=config.beam_width,
                 max_tokens=config.max_tokens,
                 length_penalty=config.repetition_penalty,  # TODO add to config as bs param
             )
@@ -148,6 +146,7 @@ class VLLMModel(ModelBase):
             path=str(config.model_path),
             tensor_parallel_size=config.tensor_parallel_size,
             gpu_memory_utilization=config.gpu_memory_utilization,
+            quantization=config.quantization,
             parser=config.parser,
             params=params,
             use_beam_search=config.use_beam_search,
@@ -163,39 +162,75 @@ class VLLMModel(ModelBase):
             model=self.path,
             tensor_parallel_size=self.tensor_parallel_size,
             gpu_memory_utilization=self.gpu_memory_utilization,
+            quantization=self.quantization,
+            enable_prefix_caching=True,
+            max_model_len=1024,
         )
 
         ilp.console.log("Finished loading vLLM model")
+
+    def _prompt_beam_search(self, prompts):
+        outputs = self.llm.beam_search(
+            prompts=[{'prompt': p} for p in prompts],
+            params=self.params,
+            # disabled by default in the current version
+            # use_tqdm=not ilp.debug,
+        )
+
+        tokenizer = self.llm.get_tokenizer()
+        for prompt, output in zip(prompts, outputs):
+            # unfortunately, beam_search() outputs the
+            # input prompt plus special tokens ---
+            # so we require the encoded prompt (which contains
+            # special tokens) and cut it out
+            tokens = output.sequences[0].tokens[len(tokenizer.encode(prompt)):]
+            yield tokenizer.decode(tokens)
+
+    def _prompt_random_sampling(self, prompts):
+        outputs = self.llm.generate(
+            prompts=prompts,
+            sampling_params=self.params,
+            use_tqdm=False,
+            # use_tqdm=not ilp.debug,
+        )
+
+        for output in outputs:
+            yield output.outputs[0].text
+
+
+    def _prompt_post(self, results):
+        # TODO hacky solution, we should define supported
+        # model families and their output formats somewhere
+
+        spath = str(self.path).lower()
+
+        for result in results:
+            # LLAMA models require no other postprocessing
+            if 'meta-llama-3-70b-instruct' in spath:
+                yield result.strip()
+                continue
+
+            if 'deepseek-r1-distill-llama-70b' in spath:
+                try:
+                    yield result.split('</think>')[1].strip()
+                except IndexError:
+                    yield result.strip()
+                continue
+
+            assert False, f'not supported: {spath}'
 
     def prompt(self, prompts: Iterable[str]) -> Generator[str, None, None]:
         if self.llm is None:
             self.load()
             assert self.llm is not None
 
-        promptlist = list(prompts)
-        assert len(promptlist)
-
         if self.use_beam_search:
-            outputs = self.llm.beam_search(
-                prompts=[{'prompt': p} for p in promptlist],
-                params=self.params,
-                # disabled by default in the current version
-                # use_tqdm=not ilp.debug,
-            )
+            gen = self._prompt_beam_search(list(prompts))
 
-            for output in outputs:
-                yield output.sequences[0].text
+        else:
+            gen = self._prompt_random_sampling(list(prompts))
 
-            return
-
-        outputs = self.llm.generate(
-            prompts=promptlist,
-            sampling_params=self.params,
-            use_tqdm=not ilp.debug,
-        )
-
-        for output in outputs:
-            yield output.outputs[0].text
+        yield from self._prompt_post(gen)
 
 
 class HuggingFaceModel(ModelBase):
@@ -226,16 +261,9 @@ class HuggingFaceModel(ModelBase):
 
         model_kwargs = {
             "max_new_tokens": config.max_tokens,
-            # "do_sample": not config.use_beam_search,
             "top_p": config.top_p,
             "repetition_penalty": config.repetition_penalty,
         }
-
-        # if model_kwargs["do_sample"]:
-        #     model_kwargs["temperature"] = config.temperature
-        # else:
-        #     model_kwargs["num_beams"] = config.best_of
-        #     model_kwargs["temperature"] = None
 
         return cls(
             path=str(config.model_path),
