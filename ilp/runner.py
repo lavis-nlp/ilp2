@@ -1,12 +1,10 @@
 import csv
 import gzip
-from curses.ascii import isdigit
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from functools import partial
 from itertools import islice
 from pathlib import Path
-from shutil import which
 from traceback import print_exc
 from typing import Callable, Generator, Iterable, Literal, Sequence
 
@@ -14,98 +12,18 @@ import orjson
 import yaml
 from irt2.dataset import IRT2
 from irt2.evaluation import Predictions, Scores, evaluate
-from irt2.types import MID, RID, VID, IDMap, Split, Task
+from irt2.types import MID, RID, VID, Split, Task
 from ktz.collections import dflat, path
+from pydantic import BaseModel
 from rich.progress import track
 
-import irt2_llm_prompter as ilp
-from irt2_llm_prompter.model import ModelBase, VLLMModel
-from irt2_llm_prompter.preprocessor import remove_stopwords, stem
-from irt2_llm_prompter.prompts import Assembler
+import ilp
+from ilp.config import Config
+from ilp.model import ModelBase
+from ilp.preprocessor import remove_stopwords, stem
+from ilp.prompts import Assembler
 
 Tasks = dict[tuple[MID, RID], set[VID]]
-
-
-@dataclass
-class Config:
-    # mode configuration
-    mode: Literal[
-        "default",
-        "prompt-re-ranking",
-        "full-re-ranking",
-        "ranker-results",
-    ]
-
-    # data configuration
-    dataset_path: str
-    dataset_split: Literal["validation", "test"]
-    dataset_task_limit: int | None
-    dataset_texts_head: str | None
-    dataset_texts_tail: str | None
-
-    # model configuration
-    model_path: str
-    model_parser: Literal["json", "csv"]
-    model_engine: Literal["vllm", "huggingface"]
-    model_quantization: Literal['fp8']
-    model_dtype: Literal["float16", "bfloat16", "float32"]
-    model_tensor_parallel_size: int
-    model_max_tokens: int = 512
-
-    # vllm model params
-    model_gpu_memory_utilization: float
-
-    # huggingface model params
-    model_batch_size: int = 100
-
-    # prompt templates
-    prompt_template_path: str  # conf/prompts/template
-    prompt_system_path: str  # conf/prompts/system
-    prompt_question_path: str  # conf/prompts/question
-
-    # preprocessing
-    stopwords_path: str | None  # conf/stopwords
-    use_stemmer: bool
-
-    # candidates
-    n_candidates: int = 0  # top n candidates given to the model
-    mentions_per_candidate: int = 1  # mentions per candidate proposed to the model
-    give_true_candidates: bool = False # TODO doc
-    use_ranker_results: bool = False # TODO doc
-
-    # sampling params (beam search)
-    sampling_use_beam_search: bool = False
-    sampling_beam_width: int = 2  # gets expensive fast
-    sampling_length_penalty: float = 1.0
-
-    # sampling params (random sampling)
-    # if use_beam_search is False
-    sampling_early_stopping: bool = True  # must be False for random sampling
-    sampling_top_p: float = 0.6  # consider tokens until their cum. prob. reaches
-    sampling_repetition_penalty: float = 1.0  # penalize new tokens if they appeared before
-
-    # sampling params (shared)
-    sampling_temperature: float = 0  # greedy if beam_search is False and set to 0
-
-    # --- persistence
-
-    def save(self, to: Path | str):
-        out = path(to)
-        out.parent.mkdir(exist_ok=True, parents=True)
-
-        with out.open("w") as fd:
-            yaml.safe_dump(asdict(self), fd)
-
-        ilp.console.log(f"exported run config to {out}")
-
-    @classmethod
-    def load(cls, fname: Path | str):
-        with path(fname, is_file=True).open(mode="r") as fd:
-            return cls(**yaml.safe_load(fd))
-
-    def __str__(self) -> str:
-        sep = "\n  - "
-        return "Config:" + sep + sep.join(f"{k}: {v}" for k, v in asdict(self).items())
 
 
 @dataclass
@@ -190,7 +108,7 @@ class Runner:
 
         if self.ds.name.startswith("BLP"):
             splits = (Split.train, Split.valid)
-            if self.config.split == "test":
+            if self.config.dataset_split == "test":
                 splits += (Split.test,)
 
             for split in splits:
@@ -248,7 +166,7 @@ class Runner:
             # content = self.tail_templates["generic"].format(mention, relation)
 
             if self.config.give_true_candidates:
-                gt_mentions_transformed, gt_mentions = self._create_true_answer(
+                gt_mentions_transformed, _ = self._create_true_answer(
                     gt_vids,
                     self.ds.idmap.mid2str,
                 )
@@ -426,7 +344,7 @@ class Runner:
         return vids
 
     # mode: ranker-results
-    def _predict_rr(self, ctx, direction) -> tuple[Task, list[tuple[float, VID]]]:
+    def _predict_rr(self, ctx, direction) -> Scores:
         preranked_vids = self.assembler.get_ranked_vids(
             direction=direction,
             task=ctx.task,
@@ -479,14 +397,6 @@ class Runner:
     def _prompt(self, prompts):
         plis = list(prompts)
         tracked = track(plis, description=f'{"prompting":12s}')
-
-        if self.model.use_beam_search:
-            ilp.console.log('beam search: prompting with single prompts')
-            results = []
-            for prompt in tracked:
-                results += self.model.prompt([prompt])
-            return results
-
         return self.model.prompt(tracked)
 
     def predict(
@@ -494,12 +404,15 @@ class Runner:
         tasks: Tasks,
         direction: Literal["head", "tail"],
     ) -> Predictions:
-        ilp.console.log(f'predicting {direction}s')
+        ilp.console.log(f"predicting {direction}s")
 
         # generator chain for batched processing
         prompt_gen = self._prompt_gen(
             direction=direction,
-            tasks=islice(tasks.items(), self.config.task_limit),
+            tasks=islice(
+                tasks.items(),
+                self.config.dataset_limit_tasks,
+            ),
         )
 
         # ensure batched processing
@@ -656,7 +569,7 @@ def run(
             tail=dataset.open_kgc_test_tails,
             head=dataset.open_kgc_test_heads,
         ),
-    }[config.split]
+    }[config.dataset_split]
     assert len(tasks) == 2 and "head" in tasks and "tail" in tasks
 
     # TODO make splits dataset specific configuration
@@ -664,7 +577,7 @@ def run(
         search_splits = (Split.train,)
     elif dataset.name.startswith("BLP"):
         search_splits = (Split.train, Split.valid)
-        if config.split == "test":
+        if config.dataset_split == "test":
             search_splits += (Split.test,)
     else:
         assert False
@@ -694,11 +607,11 @@ def run(
     assembler = Assembler.from_paths(
         dataset=dataset,
         mode=config.mode,
-        split_str=config.split,
+        split_str=config.dataset_split,
         dataset_name=dataset.name,
-        template_path=config.prompt_template_path,
-        system_path=config.prompt_system_path,
-        question_path=config.prompt_question_path,
+        template_path=config.prompt_template,
+        system_path=config.prompt_system,
+        question_path=config.prompt_question,
         texts_head_path=config.dataset_texts_head,
         texts_tail_path=config.dataset_texts_tail,
         n_candidates=config.n_candidates,
@@ -725,7 +638,7 @@ def run(
     report = evaluate(
         ds=dataset,
         task="kgc",
-        split=config.split,
+        split=config.dataset_split,
         head_predictions=predictions["head"],
         tail_predictions=predictions["tail"],
     )
@@ -758,3 +671,41 @@ def run(
             writer.writerow(row)
 
     return report
+
+
+def wrapped_run(
+    mode: str,
+    dataset: IRT2,
+    model: ModelBase,
+    config: Config,
+    dry_run: bool = False,
+    output_prefix: str = "",
+):
+    ts_start_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+    dirparent = Path(model.path).name + ("-dry" if dry_run else "")
+    dsname = dataset.name.replace("/", "_")
+    dirname = f"{output_prefix}{mode}-{dsname}-{ts_start_str}"
+
+    out = path(
+        path("data") / "experiments" / dirparent / dirname,
+        # create=True,
+    )
+
+    ilp.console.log(f"write results to {out}")
+
+    try:
+        run(
+            model=model,
+            dataset=dataset,
+            config=config,
+            result_folder=out,
+            dry_run=dry_run,
+        )
+    except Exception as exc:
+        ilp.console.log(f"{exc} occurred! writing postmortem")
+        with (out / "postmortem.txt").open(mode="w") as fd:
+            print_exc(file=fd)
+
+        if ilp.debug:
+            raise

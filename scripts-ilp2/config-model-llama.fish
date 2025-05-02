@@ -1,7 +1,6 @@
 set model_parser csv
 set model_engine vllm
 set model_path /data/tyler/llms/llama3/Meta-Llama-3-70B-Instruct
-set model_dtype bfloat16
 
 # vllm model params for 4 x RTX A6000
 set model_tensor_parallel_size 4

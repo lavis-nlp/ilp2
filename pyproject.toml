@@ -1,12 +1,12 @@
 [tool.poetry]
-name = "irt2-llm-prompter"
-version = "0.1.0"
+name = "ilp"
+version = "0.2.0"
 description = "Using chatbots to do open world knowledge graph completion."
 authors = ["Lukas Walker", "Felix Hamann"]
 readme = "README.md"
 
 [tool.poetry.scripts]
-ilp = "irt2_llm_prompter.cli:entry"
+ilp = "ilp.cli:entry"
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"
@@ -16,12 +16,12 @@ rich-click = "^1.8.2"
 pretty-errors = "^1.2.25"
 pudb = "^2024.1"
 orjson = "^3.10.3"
-irt2 = { path = "lib/irt2", develop = true }
 h5py = "^3.12.1"
 pystemmer = "^2.2.0.3"
 autoawq = "^0.2.7.post2"
 bitsandbytes = "^0.45.0"
 flashinfer-python = "<0.2.3"
+irt2 = "^1.1.0"
 
 [tool.poetry.group.dev.dependencies]
 ipython = "^8.24.0"
