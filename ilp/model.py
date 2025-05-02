@@ -77,6 +77,7 @@ class ModelBase:
 
     def prompt(
         self,
+        config: Config,
         prompts: Iterable[str],
     ) -> Generator[str, None, None]:
         raise NotImplementedError
@@ -120,26 +121,6 @@ class VLLMModel(ModelBase):
         self.quantization = quantization
         self.max_tokens = max_tokens
 
-    # @classmethod
-    # def from_config(cls, config: Config):
-
-    #     # either
-    #     if not config.sampling_use_beam_search:
-    #         params = SamplingParams(
-    #             temperature=config.sampling_temperature,
-    #             top_p=config.sampling_top_p,
-    #             max_tokens=config.model_max_tokens,
-    #             repetition_penalty=config.sampling_repetition_penalty,
-    #         )
-
-    #     else:
-    #         params = BeamSearchParams(
-    #             beam_width=config.sampling_beam_width,
-    #             max_tokens=config.model_max_tokens,
-    #             # TODO add to config as bs param
-    #             length_penalty=config.sampling_repetition_penalty,
-    #         )
-
     def load(self):
         if self.llm is not None:
             return
@@ -157,13 +138,19 @@ class VLLMModel(ModelBase):
 
         ilp.console.log("Finished loading vLLM model")
 
-    def _prompt_beam_search(self, prompts):
+    def _prompt_beam_search(self, config: Config, prompts):
         assert self.llm
-        assert isinstance(self.params, BeamSearchParams)
+        assert self.use_beam_search
+
+        params = BeamSearchParams(
+            beam_width=config.sampling_beam_width,
+            max_tokens=config.model_max_tokens,
+            length_penalty=config.sampling_repetition_penalty,
+        )
 
         outputs = self.llm.beam_search(
             prompts=[{"prompt": p} for p in prompts],
-            params=self.params,
+            params=params,
             # disabled by default in the current version
             # use_tqdm=not ilp.debug,
         )
@@ -177,14 +164,21 @@ class VLLMModel(ModelBase):
             tokens = output.sequences[0].tokens[len(tokenizer.encode(prompt)) :]
             yield tokenizer.decode(tokens)
 
-    def _prompt_random_sampling(self, prompts):
-        assert isinstance(self.params, SamplingParams)
+    def _prompt_random_sampling(self, config: Config, prompts):
+        assert not self.use_beam_search
+
+        params = SamplingParams(
+            temperature=config.sampling_temperature,
+            top_p=config.sampling_top_p,
+            max_tokens=config.model_max_tokens,
+            repetition_penalty=config.sampling_repetition_penalty,
+        )
 
         # prompts is "deprected" and we should use "inputs" instead
         # however, there is no input parameter (???)
         outputs = self.llm.generate(
             prompts=prompts,
-            sampling_params=self.params,
+            sampling_params=params,
             use_tqdm=False,
         )
 
@@ -212,16 +206,26 @@ class VLLMModel(ModelBase):
 
             assert False, f"not supported: {spath}"
 
-    def prompt(self, prompts: Iterable[str]) -> Generator[str, None, None]:
+    def prompt(
+        self,
+        config: Config,
+        prompts: Iterable[str],
+    ) -> Generator[str, None, None]:
         if self.llm is None:
             self.load()
             assert self.llm is not None
 
         if self.use_beam_search:
-            gen = self._prompt_beam_search(list(prompts))
+            gen = self._prompt_beam_search(
+                config,
+                list(prompts),
+            )
 
         else:
-            gen = self._prompt_random_sampling(list(prompts))
+            gen = self._prompt_random_sampling(
+                config,
+                list(prompts),
+            )
 
         yield from self._prompt_post(gen)
 

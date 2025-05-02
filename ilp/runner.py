@@ -397,7 +397,7 @@ class Runner:
     def _prompt(self, prompts):
         plis = list(prompts)
         tracked = track(plis, description=f'{"prompting":12s}')
-        return self.model.prompt(tracked)
+        return self.model.prompt(self.config, tracked)
 
     def predict(
         self,
