@@ -9,22 +9,18 @@ set debug # -qd
 # recommended parameters for LLAMA are
 #   - temperature: 0.6
 #   - top_p: 0.9
-#. $root/config-model-llama.fish
+. $root/config-model-llama.fish
 
 # recommended parameters for LLAMA are
 #   - temperature: 0.6
 #   - top_p: 0.95
-. $root/config-model-deepseek.fish
+# . $root/config-model-deepseek.fish
 
 set dataset_config lib/irt2/conf/datasets/original-subsampled.yaml
 set dataset_keys irt2/tiny irt2/small irt2/medium irt2/large
 set dataset_split validation
 
-set prompt_template conf/prompts/template/template-ripe-generic-v3.txt
-set prompt_system conf/prompts/system/sysp-to-csv-v4.1.yaml
-set prompt_question conf/prompts/question/prompt-templates-generic-v6.yaml
-
-set mode default
+. $root/config-mode-default.fish
 
 # greedy sampling
 # top_p is 1 because temp is 0

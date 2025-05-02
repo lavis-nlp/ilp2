@@ -684,7 +684,7 @@ def wrapped_run(
     ts_start_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
     dirparent = Path(model.path).name + ("-dry" if dry_run else "")
-    dsname = dataset.name.replace("/", "_")
+    dsname = dataset.name.replace("/", "_").lower()
     dirname = f"{output_prefix}{mode}-{dsname}-{ts_start_str}"
 
     out = path(
