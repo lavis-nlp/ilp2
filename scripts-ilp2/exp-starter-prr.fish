@@ -12,8 +12,9 @@ set prompt_template conf/prompts/template/template-mode-2-v2.1.txt
 set system_prompt conf/prompts/system/sysp-mode-2-to-csv-v2.1.yaml
 set question_template conf/prompts/question/prompt-templates-generic-v6.yaml
 
-set n_cands 8
-set mentions_per_candidate 10
-
 . $root/run.fish
-run_experiments $argv
+
+run_experiments \
+    --n-candidates 8 \
+    --mentions-per-candidate 10 \
+    $argv

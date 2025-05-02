@@ -125,12 +125,12 @@ class VLLMModel(ModelBase):
 
     @classmethod
     def from_config(cls, config):
+
         # either
         if not config.use_beam_search:
             params = SamplingParams(
                 temperature=config.temperature,
                 top_p=config.top_p,
-                best_of=config.best_of, # TODO deprecated?
                 max_tokens=config.max_tokens,
                 repetition_penalty=config.repetition_penalty,
             )

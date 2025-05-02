@@ -66,25 +66,25 @@ def main(quiet: bool, debug: bool):
     help="mode in which outputs are processed, use mode specific prompts",
 )
 @click.option(
-    "--split",
+    "--dataset-split",
     type=click.Choice(["validation", "test"]),
     required=True,
     help="run on test or validation",
 )
 @click.option(
-    "--model",
+    "--model-path",
     type=str,
     required=False,
     help="directory for vllm to load a model from",
 )
 @click.option(
-    "--tensor-parallel-size",
+    "--model-tensor-parallel-size",
     type=int,
     required=False,
     default=1,
 )
 @click.option(
-    "--gpu-memory-utilization",
+    "--model-gpu-memory-utilization",
     type=float,
     required=False,
     default=1.0,
@@ -113,7 +113,7 @@ def main(quiet: bool, debug: bool):
     help="some lib/irt2/conf/datasets yaml file",
 )
 @click.option(
-    "--datasets",
+    "--dataset-key",
     type=str,
     multiple=True,
     help="select keys from dataset-config",
@@ -137,7 +137,7 @@ def main(quiet: bool, debug: bool):
     help="optinal, choose parser corresponding to prompts",
 )
 @click.option(
-    "--engine",
+    "--model-engine",
     default="vllm",
     required=False,
     type=click.Choice(["huggingface", "vllm"], case_sensitive=False),
@@ -151,14 +151,14 @@ def main(quiet: bool, debug: bool):
     help="optional, set batch size for huggingface engine",
 )
 @click.option(
-    "--quantization",
+    "--model-quantization",
     type=click.Choice(["fp8"], case_sensitive=False),
     default=None,
     show_default=True,
     help="optional, specify quantization technique for model weights",
 )
 @click.option(
-    "--dtype",
+    "--model-dtype",
     type=click.Choice(["float16", "bfloat16", "float32"], case_sensitive=False),
     default="bfloat16",
     show_default=True,
@@ -179,7 +179,8 @@ def main(quiet: bool, debug: bool):
     "--n-candidates",
     type=int,
     required=False,
-    default=0,
+    default=(0, ),
+    multiple=True,
     help="optional, gives the model the top n candidates",
 )
 @click.option(
@@ -212,11 +213,10 @@ def main(quiet: bool, debug: bool):
     is_flag=True,
     help="use ground truth mentions as candidates",
 )
-@click.option("--sampling-temperature", type=float)
-@click.option("--sampling-top-p", type=float)
+@click.option("--sampling-temperature", type=float, multiple=True)
+@click.option("--sampling-top-p", type=float, multiple=True)
 @click.option("--sampling-use-beam-search", type=bool)
 @click.option("--sampling-early-stopping", type=bool)
-@click.option("--sampling-best-of", type=int)
 @click.option("--sampling-max-tokens", type=int)
 @click.option("--sampling-repetition-penalty", type=float)
 def run_experiment(
@@ -239,7 +239,7 @@ def run_experiment(
     dtype: Literal["float16", "bfloat16", "float32"],
     stopwords_path: str | None,
     use_stemmer: bool,
-    n_candidates: int,
+    n_candidates: tuple[int],
     mentions_per_candidate: int,
     limit_tasks: int | None,
     output_prefix: str,
@@ -247,6 +247,21 @@ def run_experiment(
     give_true_candidates: bool = False,
     **sampling_params,
 ):
+    # iterate all combinations of sweeping parameters
+
+    dsgen = irt2.loader.from_config_file(
+        path(dataset_config, is_file=True),
+        only=datasets,
+    )
+
+    sampling_params = {
+        k.replace("sampling_", ""): v
+        for k, v in sampling_params.items()
+        if v is not None
+    }
+
+    breakpoint()
+
     config = Config(
         # mode related
         mode=mode,
@@ -277,19 +292,11 @@ def run_experiment(
         prompt_system_path=system_prompt,
         prompt_question_path=question_template,
         # sampling params
-        **{
-            k.replace("sampling_", ""): v
-            for k, v in sampling_params.items()
-            if v is not None
-        },
+        **sampling_params,
     )
 
     ilp.console.print("\n", str(config), "\n")
 
-    dsgen = irt2.loader.from_config_file(
-        path(dataset_config, is_file=True),
-        only=datasets,
-    )
 
     model_instance = ModelBase.from_config(config)
 
@@ -298,7 +305,8 @@ def run_experiment(
         ts_start_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
         dirparent = path(model).name + ("-dry" if dry_run else "")
-        dirname = f"{output_prefix}{ts_start_str}"
+        dsname = dataset.name.replace('/', '_')
+        dirname = f"{output_prefix}{mode}-{dsname}-{ts_start_str}"
 
         out = path(
             path("data") / "experiments" / dirparent / dirname,
@@ -308,13 +316,14 @@ def run_experiment(
         ilp.console.log(f"write results to {out}")
 
         try:
-            run(
-                model=model_instance,
-                dataset=dataset,
-                config=config,
-                result_folder=out,
-                dry_run=dry_run,
-            )
+            ...
+            # run(
+            #     model=model_instance,
+            #     dataset=dataset,
+            #     config=config,
+            #     result_folder=out,
+            #     dry_run=dry_run,
+            # )
         except Exception as exc:
             ilp.console.log(f"{exc} occurred! writing postmortem")
             with (out / "postmortem.txt").open(mode="w") as fd:
