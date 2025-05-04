@@ -22,5 +22,7 @@ function run_experiments
         --prompt-template $prompt_template \
         --prompt-system $prompt_system \
         --prompt-question $prompt_question \
+        $n_candidates \
+        $mentions_per_candidate \
         $argv
 end

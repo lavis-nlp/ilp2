@@ -17,10 +17,12 @@ set debug # -qd
 # . $root/config-model-deepseek.fish
 
 set dataset_config lib/irt2/conf/datasets/original-subsampled.yaml
-set dataset_keys irt2/tiny irt2/small irt2/medium irt2/large
+set dataset_keys irt2/tiny # irt2/small irt2/medium irt2/large
 set dataset_split validation
 
-. $root/config-mode-default.fish
+# . $root/config-mode-default.fish
+. $root/config-mode-prompt-re-ranking.fish
+# . $root/config-mode-full-re-ranking.fish
 
 # greedy sampling
 # top_p is 1 because temp is 0
@@ -36,6 +38,7 @@ set temperatures (params --sampling-temperature (seq 0.1 0.1 0.9))
 set top_ps (params --sampling-top-p (seq 0.2 0.1 0.9))
 set rnd (tr -dc A-Za-z0-9 </dev/urandom | head -c 5; echo)
 
+set debug -qd
 run_experiments \
     $temperatures \
     $top_ps \

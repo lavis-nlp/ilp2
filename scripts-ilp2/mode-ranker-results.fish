@@ -1,0 +1,8 @@
+set mode ranker-results
+
+set prompt_template conf/prompts/template/template-mode-3-v1.txt
+set system_prompt conf/prompts/system/sysp-mode-3-to-csv-v1.yaml
+set question_template conf/prompts/question/prompt-templates-generic-v6.yaml
+
+set n_candidates --n-candidates 8
+set mentions_per_candidate --mentions-per-candidate 10
