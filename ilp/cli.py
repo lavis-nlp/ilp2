@@ -279,8 +279,14 @@ def run_experiment(
         }
     )
 
-    ilp.console.log("loading model from:", model_instance.path)
-    # model_instance.load()
+    defer_loading = (
+        ilp.debug,
+        dry_run,
+        mode == 'ranker-results',
+    )
+
+    if not any(defer_loading):
+        model_instance.load()
 
     sweeping = {
         "dataset_key": list(datasets),

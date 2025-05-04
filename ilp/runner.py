@@ -395,9 +395,18 @@ class Runner:
         assert False
 
     def _prompt(self, prompts):
-        plis = list(prompts)
-        tracked = track(plis, description=f'{"prompting":12s}')
-        return self.model.prompt(self.config, tracked)
+        lis = list(prompts)
+        ilp.console.log(f'querying model with {len(lis)} prompts...')
+
+        ts_start = datetime.now()
+        res = list(self.model.prompt(self.config, lis))
+        ts_end = datetime.now()
+
+        t_delta = ts_end - ts_start
+        t_per_prompt = t_delta / len(lis)
+
+        ilp.console.log(f"finished, took {t_delta} ({t_per_prompt} per prompt)")
+        return res
 
     def predict(
         self,
@@ -422,7 +431,7 @@ class Runner:
             if not self.re_evaluate:
                 # load model before tracking starts
                 self.model.load()
-                outputs = list(self._prompt(ctx.prompt for ctx in ctxs))
+                outputs = self._prompt(ctx.prompt for ctx in ctxs)
             else:
                 outputs = self._load_model_outputs()
         else:
