@@ -38,7 +38,6 @@ set temperatures (params --sampling-temperature (seq 0.1 0.1 0.9))
 set top_ps (params --sampling-top-p (seq 0.2 0.1 0.9))
 set rnd (tr -dc A-Za-z0-9 </dev/urandom | head -c 5; echo)
 
-set debug -qd
 run_experiments \
     $temperatures \
     $top_ps \
