@@ -258,3 +258,482 @@
       languages spoken, written, or signed: Entity={mention}, Relation=languages spoken, written, or signed
       occupation: Entity={mention}, Relation=occupation
       place of birth: Entity={mention}, Relation=place of birth
+- datasets:
+    - BLP/FB15K237
+  prompts:
+    head:
+      Soccer Football Team Current Roster. Soccer Football Roster Position Position: Entity={mention}, Relation=football teams' current roster
+      Music Artist Origin: Entity={mention}, Relation=music artists' origin
+      Ice Hockey Hockey Team Current Roster. Sports Sports Team Roster Position: Entity={mention}, Relation=hockey teams' current roster
+      Food Food Nutrients. Food Nutrition Fact Nutrient: Entity={mention}, Relation=food nutrients
+      Film Actor Film. Film Performance Film: Entity={mention}, Relation=actors' films
+      Award Award Nominee Award Nominations. Award Award Nomination Nominated For: Entity={mention}, Relation=award nominees' award nominations
+      Government Political Party Politicians In This Party. Government Political Party Tenure Politician: Entity={mention}, Relation=politicians in this political party
+      Base Schemastaging Person Extra Net Worth. Measurement Unit Dated Money Value Currency: Entity={mention}, Relation=persons' net worth
+      People Deceased Person Place Of Death: Entity={mention}, Relation=deceased persons' place of death
+      People Person Profession: Entity={mention}, Relation=persons' profession
+      Location Administrative Division First Level Division Of: Entity={mention}, Relation=first-level divisions of administrative regions
+      Base Marchmadness Ncaa Basketball Tournament Seeds. Base Marchmadness Ncaa Tournament Seed Team: Entity={mention}, Relation=NCAA basketball tournament seeds
+      Education University International Tuition. Measurement Unit Dated Money Value Currency: Entity={mention}, Relation=international tuition for universities
+      Location Us County County Seat: Entity={mention}, Relation=county seats of US counties
+      Location Location Partially Contains: Entity={mention}, Relation=locations that partially contain other locations
+      Tv Tv Program Program Creator: Entity={mention}, Relation=TV programs' program creators
+      Film Film Music: Entity={mention}, Relation=films' music
+      Tv Tv Program Languages: Entity={mention}, Relation=TV programs' languages
+      Common Topic Webpage. Common Webpage Category: Entity={mention}, Relation=common topics' webpages
+      User Tsegaran Random Taxonomy Subject Entry. User Tsegaran Random Taxonomy Entry Taxonomy: Entity={mention}, Relation=taxonomy subjects' entries
+      Education Field Of Study Students Majoring. Education Education Major Field Of Study: Entity={mention}, Relation=students majoring in fields of study
+      Business Business Operation Assets. Measurement Unit Dated Money Value Currency: Entity={mention}, Relation=business operations' assets
+      Film Film Set Designer Film Sets Designed: Entity={mention}, Relation=film set designers' designed film sets
+      Dataworld Gardening Hint Split To: Entity={mention}, Relation=gardening hints split into
+      People Person Languages: Entity={mention}, Relation=persons' languages
+      Business Job Title People With This Title. Business Employment Tenure Company: Entity={mention}, Relation=people with specific job titles
+      Location Country Form Of Government: Entity={mention}, Relation=countries' form of government
+      Base Schemastaging Organization Extra Phone Number. Base Schemastaging Phone Sandbox Service Language: Entity={mention}, Relation=organizations' phone numbers
+      People Person Place Of Birth: Entity={mention}, Relation=persons' place of birth
+      Sports Sports Team Colors: Entity={mention}, Relation=sports teams' colors
+      Education Educational Institution School Type: Entity={mention}, Relation=types of educational institutions
+      Award Award Category Winners. Award Award Honor Award Winner: Entity={mention}, Relation=winners of award categories
+      Organization Organization Headquarters. Location Mailing Address Citytown: Entity={mention}, Relation=headquarters of organizations
+      Education Educational Degree People With This Degree. Education Education Student: Entity={mention}, Relation=people with this educational degree
+      Government Legislative Session Members. Government Government Position Held Legislative Sessions: Entity={mention}, Relation=members of legislative sessions
+      Film Film Distributors. Film Film Film Distributor Relationship Film Distribution Medium: Entity={mention}, Relation=film distributors
+      Education Educational Degree People With This Degree. Education Education Major Field Of Study: Entity={mention}, Relation=people with this educational degree
+      Location Hud County Place County: Entity={mention}, Relation=counties in a HUD county place
+      Location Administrative Division Country: Entity={mention}, Relation=countries of administrative divisions
+      Film Film Film Production Design By: Entity={mention}, Relation=film production design contributors
+      Award Award Winning Work Awards Won. Award Award Honor Award: Entity={mention}, Relation=works that have won awards
+      Organization Organization Headquarters. Location Mailing Address State Province Region: Entity={mention}, Relation=headquarters of organizations
+      Base Schemastaging Organization Extra Phone Number. Base Schemastaging Phone Sandbox Contact Category: Entity={mention}, Relation=phone numbers of extra organizations
+      Tv Tv Program Country Of Origin: Entity={mention}, Relation=countries of origin for TV programs
+      Olympics Olympic Participating Country Medals Won. Olympics Olympic Medal Honor Medal: Entity={mention}, Relation=medals won by Olympic participating countries
+      Location Country Second Level Divisions: Entity={mention}, Relation=second-level divisions of countries
+      Award Award Ceremony Awards Presented. Award Award Honor Honored For: Entity={mention}, Relation=awards presented at award ceremonies
+      Organization Organization Member Member Of. Organization Organization Membership Organization: Entity={mention}, Relation=organization members and their affiliations
+      Education Educational Institution Campuses: Entity={mention}, Relation=campuses of educational institutions
+      Music Artist Contribution. Music Recording Contribution Performance Role: Entity={mention}, Relation=musical contributions by artists
+      Award Ranked Item Appears In Ranked Lists. Award Ranking List: Entity={mention}, Relation=ranked items in ranked lists
+      People Person Religion: Entity={mention}, Relation=religions of people
+      Travel Travel Destination Climate. Travel Travel Destination Monthly Climate Month: Entity={mention}, Relation=climates of travel destinations
+      Film Special Film Performance Type Film Performance Type. Film Performance Film: Entity={mention}, Relation=types of special film performances
+      Award Award Nominee Award Nominations. Award Award Nomination Award: Entity={mention}, Relation=award nominations for nominees
+      Location Statistical Region Religions. Location Religion Percentage Religion: Entity={mention}, Relation=religions of statistical regions
+      Sports Sports League Draft Picks. Sports Sports League Draft Pick School: Entity={mention}, Relation=sports league draft picks
+      Film Film Distributors. Film Film Film Distributor Relationship Region: Entity={mention}, Relation=film distributors
+      Government Politician Government Positions Held. Government Government Position Held Legislative Sessions: Entity={mention}, Relation=government positions held by politicians
+      Organization Role Leaders. Organization Leadership Organization: Entity={mention}, Relation=leaders in organizations
+      Tv Tv Network Programs. Tv Tv Network Duration Program: Entity={mention}, Relation=tv networks' programs
+      Soccer Football Team Current Roster. Sports Sports Team Roster Position: Entity={mention}, Relation=football teams' current rosters
+      Music Instrument Instrumentalists: Entity={mention}, Relation=musical instruments' instrumentalists
+      Business Business Operation Operating Income. Measurement Unit Dated Money Value Currency: Entity={mention}, Relation=business operations' operating income
+      People Cause Of Death People: Entity={mention}, Relation=people's causes of death
+      Film Film Film Art Direction By: Entity={mention}, Relation=films' art direction by
+      People Person Sibling S. People Sibling Relationship Sibling: Entity={mention}, Relation=people's siblings
+      Film Film Cinematography: Entity={mention}, Relation=films' cinematography
+      Film Actor Dubbing Performances. Film Dubbing Performance Language: Entity={mention}, Relation=actors' dubbing performances
+      Base Biblioness Bibs Location State: Entity={mention}, Relation=libraries' location by state
+      Base Petbreeds City With Dogs Top Breeds. Base Petbreeds Dog City Relationship Dog Breed: Entity={mention}, Relation=cities with dogs' top breeds
+      People Person Gender: Entity={mention}, Relation=people's genders
+      Education Field Of Study Students Majoring. Education Education Student: Entity={mention}, Relation=students majoring in fields of study
+      Base Popstra Celebrity Dated. Base Popstra Dated Participant: Entity={mention}, Relation=celebrities' dating history
+      Sports Sports Team Roster. American Football Football Roster Position Position: Entity={mention}, Relation=sports teams' rosters
+      Award Award Winner Awards Won. Award Award Honor Award Winner: Entity={mention}, Relation=award winners' awards won
+      Olympics Olympic Participating Country Medals Won. Olympics Olympic Medal Honor Olympics: Entity={mention}, Relation=participating countries' medals won in the Olympics
+      Film Director Film: Entity={mention}, Relation=directors' films
+      Tv Tv Producer Programs Produced. Tv Tv Producer Term Program: Entity={mention}, Relation=tv producers' produced programs
+      Film Film Distributor Films Distributed. Film Film Film Distributor Relationship Film: Entity={mention}, Relation=film distributors' distributed films
+      Olympics Olympic Games Sports: Entity={mention}, Relation=Olympic games' sports
+      Music Record Label Artist: Entity={mention}, Relation=record labels' artists
+      Education University Local Tuition. Measurement Unit Dated Money Value Currency: Entity={mention}, Relation=universities' local tuition
+      Film Film Story By: Entity={mention}, Relation=films' story by
+      People Person Spouse S. People Marriage Spouse: Entity={mention}, Relation=people's spouses
+      Sports Sports League Teams. Sports Sports League Participation Team: Entity={mention}, Relation=sports leagues' teams
+      People Profession Specialization Of: Entity={mention}, Relation=professions' specializations
+      Base Americancomedy Celebrity Impressionist Celebrities Impersonated: Entity={mention}, Relation=celebrity impressionists' impersonated celebrities
+      Tv Tv Program Genre: Entity={mention}, Relation=tv programs' genres
+      Award Award Category Nominees. Award Award Nomination Nominated For: Entity={mention}, Relation=award categories' nominees
+      Language Human Language Countries Spoken In: Entity={mention}, Relation=human languages spoken in countries
+      Organization Organization Headquarters. Location Mailing Address Country: Entity={mention}, Relation=organization headquarters
+      Location Statistical Region Gdp Real. Measurement Unit Adjusted Money Value Adjustment Currency: Entity={mention}, Relation=real GDP of statistical regions
+      Education University Fraternities And Sororities: Entity={mention}, Relation=fraternities and sororities at universities
+      Award Award Nominee Award Nominations. Award Award Nomination Award Nominee: Entity={mention}, Relation=award nominations received by nominees
+      Military Military Combatant Military Conflicts. Military Military Combatant Group Combatants: Entity={mention}, Relation=military conflicts involving combatants
+      Award Award Nominated Work Award Nominations. Award Award Nomination Nominated For: Entity={mention}, Relation=award nominations for nominated works
+      Location Location Time Zones: Entity={mention}, Relation=time zones of locations
+      Film Film Dubbing Performances. Film Dubbing Performance Actor: Entity={mention}, Relation=dubbing performances in films
+      Film Film Subject Films: Entity={mention}, Relation=films by subject
+      Education Educational Degree People With This Degree. Education Education Institution: Entity={mention}, Relation=people with this educational degree
+      Education Educational Institution Colors: Entity={mention}, Relation=colors of educational institutions
+      Award Award Category Category Of: Entity={mention}, Relation=category of award
+      Tv Tv Personality Tv Regular Appearances. Tv Tv Regular Personal Appearance Program: Entity={mention}, Relation=regular TV appearances of TV personalities
+      Film Film Language: Entity={mention}, Relation=language of films
+      Music Group Member Membership. Music Group Membership Group: Entity={mention}, Relation=membership of group members
+      Business Business Operation Revenue. Measurement Unit Dated Money Value Currency: Entity={mention}, Relation=revenue from business operations
+      Film Film Film Festivals: Entity={mention}, Relation=film festivals
+      Film Actor Film. Film Performance Special Performance Type: Entity={mention}, Relation=films featuring actors
+      Organization Non Profit Organization Registered With. Organization Non Profit Registration Registering Agency: Entity={mention}, Relation=non-profit organizations registered with
+      Government Politician Government Positions Held. Government Government Position Held Jurisdiction Of Office: Entity={mention}, Relation=government positions held by politicians
+      Base Aareas Schema Administrative Area Administrative Parent: Entity={mention}, Relation=administrative parent areas of administrative regions
+      Award Award Winning Work Awards Won. Award Award Honor Award Winner: Entity={mention}, Relation=awards won by award-winning works
+      Organization Organization Place Founded: Entity={mention}, Relation=places where organizations were founded
+      Soccer Football Player Current Team. Sports Sports Team Roster Team: Entity={mention}, Relation=current teams of football players
+      Government Politician Government Positions Held. Government Government Position Held Basic Title: Entity={mention}, Relation=government positions held by politicians
+      Music Artist Track Contributions. Music Track Contribution Role: Entity={mention}, Relation=track contributions of music artists
+      Base Localfood Seasonal Month Produce Available. Base Localfood Produce Availability Seasonal Months: Entity={mention}, Relation=seasonal produce available in months
+      Celebrities Celebrity Celebrity Friends. Celebrities Friendship Friend: Entity={mention}, Relation=celebrity friends of celebrities
+      Sports Professional Sports Team Draft Picks. Sports Sports League Draft Pick School: Entity={mention}, Relation=draft picks of professional sports teams
+      Award Hall Of Fame Inductees. Award Hall Of Fame Induction Inductee: Entity={mention}, Relation=hall of fame inductees of awards
+      Influence Influence Node Peers. Influence Peer Relationship Peers: Entity={mention}, Relation=peers in influence networks
+      Medicine Disease Risk Factors: Entity={mention}, Relation=risk factors for diseases
+      Broadcast Content Artist: Entity={mention}, Relation=artist of broadcast content
+      Film Film Estimated Budget. Measurement Unit Dated Money Value Currency: Entity={mention}, Relation=estimated budget of films
+      Military Military Conflict Combatants. Military Military Combatant Group Combatants: Entity={mention}, Relation=combatants in military conflicts
+      Location Capital Of Administrative Division Capital Of. Location Administrative Division Capital Relationship Administrative Division: Entity={mention}, Relation=capital of administrative divisions
+      Tv Tv Program Regular Cast. Tv Regular Tv Appearance Actor: Entity={mention}, Relation=regular cast of TV programs
+      People Deceased Person Place Of Burial: Entity={mention}, Relation=place of burial for deceased persons
+      Location Location Adjoin S. Location Adjoining Relationship Adjoins: Entity={mention}, Relation=adjoining locations
+      Music Group Member Membership. Music Group Membership Role: Entity={mention}, Relation=membership in music groups
+      Award Award Ceremony Awards Presented. Award Award Honor Award Winner: Entity={mention}, Relation=awards presented at award ceremonies
+      Film Film Prequel: Entity={mention}, Relation=prequels of films
+      Film Film Produced By: Entity={mention}, Relation=producers of films
+      Tv Tv Program Tv Producer. Tv Tv Producer Term Producer Type: Entity={mention}, Relation=TV producers of programs
+      Sports Sports Position Players. Sports Sports Team Roster Team: Entity={mention}, Relation=players in sports positions
+      Olympics Olympic Games Participating Countries: Entity={mention}, Relation=participating countries in Olympic games
+      Music Genre Parent Genre: Entity={mention}, Relation=parent genres of music
+      Tv Tv Writer Tv Programs. Tv Tv Program Writer Relationship Tv Program: Entity={mention}, Relation=TV programs written by TV writers
+      Music Genre Artists: Entity={mention}, Relation=artists in music genres
+      Film Film Genre: Entity={mention}, Relation=genres of films
+      People Person Employment History. Business Employment Tenure Company: Entity={mention}, Relation=employment history of persons
+      Education University Domestic Tuition. Measurement Unit Dated Money Value Currency: Entity={mention}, Relation=domestic tuition at universities
+      People Person Nationality: Entity={mention}, Relation=nationality of persons
+      Location Country Capital: Entity={mention}, Relation=capital of countries
+      Location Statistical Region Gni Per Capita In Ppp Dollars. Measurement Unit Dated Money Value Currency: Entity={mention}, Relation=GNI per capita in PPP dollars for statistical regions
+      Base Aareas Schema Administrative Area Capital: Entity={mention}, Relation=capital of administrative areas
+      Business Business Operation Industry: Entity={mention}, Relation=industry of business operations
+      Location Hud Foreclosure Area Estimated Number Of Mortgages. Measurement Unit Dated Integer Source: Entity={mention}, Relation=estimated number of mortgages in HUD foreclosure areas
+      Film Film Other Crew. Film Film Crew Gig Crewmember: Entity={mention}, Relation=other crew members of films
+      Base Popstra Location Vacationers. Base Popstra Vacation Choice Vacationer: Entity={mention}, Relation=vacationers in a location
+      Film Film Film Format: Entity={mention}, Relation=format of films
+      Medicine Disease Notable People With This Condition: Entity={mention}, Relation=notable people with a disease
+      Film Film Costume Design By: Entity={mention}, Relation=costume designers for films
+      Government Government Office Category Officeholders. Government Government Position Held Jurisdiction Of Office: Entity={mention}, Relation=officeholders in a government office category
+      Location Statistical Region Gdp Nominal. Measurement Unit Dated Money Value Currency: Entity={mention}, Relation=nominal GDP of a statistical region
+      Sports Sports Team Roster. Baseball Baseball Roster Position Position: Entity={mention}, Relation=roster of a sports team
+      Award Award Winning Work Awards Won. Award Award Honor Honored For: Entity={mention}, Relation=awards won by a winning work
+      Olympics Olympic Sport Athletes. Olympics Olympic Athlete Affiliation Olympics: Entity={mention}, Relation=athletes in an Olympic sport
+      Celebrities Celebrity Sexual Relationships. Celebrities Romantic Relationship Celebrity: Entity={mention}, Relation=sexual relationships of a celebrity
+      People Marriage Union Type Unions Of This Type. People Marriage Location Of Ceremony: Entity={mention}, Relation=unions of a marriage type
+      Organization Organization Child. Organization Organization Relationship Child: Entity={mention}, Relation=children of an organization
+      Organization Organization Founder Organizations Founded: Entity={mention}, Relation=founder of organizations established
+      Sports Sports Team Sport: Entity={mention}, Relation=sport of a sports team
+      People Ethnicity Geographic Distribution: Entity={mention}, Relation=geographic distribution of an ethnicity
+      Location Statistical Region Places Exported To. Location Imports And Exports Exported To: Entity={mention}, Relation=places exported to by a statistical region
+      Location Country Official Language: Entity={mention}, Relation=official language of a country
+      Film Film Production Companies: Entity={mention}, Relation=production companies for a film
+      User Jg Default Domain Olympic Games Sports: Entity={mention}, Relation=sports in the Olympic games
+      Time Event Locations: Entity={mention}, Relation=locations of event
+      People Person Spouse S. People Marriage Type Of Union: Entity={mention}, Relation=spouses of a person
+      Government Governmental Body Members. Government Government Position Held Legislative Sessions: Entity={mention}, Relation=members of a governmental body
+      Media Common Netflix Genre Titles: Entity={mention}, Relation=titles in a Netflix genre
+      User Alexander Philosophy Philosopher Interests: Entity={mention}, Relation=interests of a philosopher
+      Film Film Runtime. Film Film Cut Film Release Region: Entity={mention}, Relation=runtime of a film
+      Education Educational Institution Students Graduates. Education Education Student: Entity={mention}, Relation=students who graduated from an educational institution
+      Base Eating Practicer Of Diet Diet: Entity={mention}, Relation=practitioners of a diet
+      Tv Non Character Role Tv Regular Personal Appearances. Tv Tv Regular Personal Appearance Person: Entity={mention}, Relation=personal appearances of a regular TV character
+      Sports Sports Position Players. Sports Sports Team Roster Position: Entity={mention}, Relation=players in a sports position
+      Sports Professional Sports Team Draft Picks. Sports Sports League Draft Pick Draft: Entity={mention}, Relation=draft picks for a professional sports team
+      Medicine Symptom Symptom Of: Entity={mention}, Relation=symptoms
+      Film Person Or Entity Appearing In Film Films. Film Personal Film Appearance Type Of Appearance: Entity={mention}, Relation=films featuring the person or entity
+      Sports Sports Team Location Teams: Entity={mention}, Relation=locations of sports teams
+      American Football Football Team Current Roster. Sports Sports Team Roster Position: Entity={mention}, Relation=current roster of the football team
+      People Person Places Lived. People Place Lived Location: Entity={mention}, Relation=places where the person lived
+      Location Statistical Region Rent50 2. Measurement Unit Dated Money Value Currency: Entity={mention}, Relation=average rent in statistical regions
+      Film Film Personal Appearances. Film Personal Film Appearance Person: Entity={mention}, Relation=personal appearances in films
+      Music Instrument Family: Entity={mention}, Relation=family of musical instruments
+      Sports Sports Team Roster. Basketball Basketball Roster Position Position: Entity={mention}, Relation=roster of sports teams
+      Base Schemastaging Organization Extra Phone Number. Base Schemastaging Phone Sandbox Service Location: Entity={mention}, Relation=phone number of the organization
+      Film Film Release Date S. Film Film Regional Release Date Film Release Region: Entity={mention}, Relation=release dates of films
+      Award Award Category Disciplines Or Subjects: Entity={mention}, Relation=disciplines or subjects for award categories
+      Base Popstra Celebrity Friendship. Base Popstra Friendship Participant: Entity={mention}, Relation=friendships of celebrities
+      Music Performance Role Regular Performances. Music Group Membership Group: Entity={mention}, Relation=regular performances of musical roles
+      Film Film Edited By: Entity={mention}, Relation=editors of films
+      Base X2010fifaworldcupsouthafrica World Cup Squad Current World Cup Squad. Base X2010fifaworldcupsouthafrica Current World Cup Squad Current Club: Entity={mention}, Relation=current squad for the World Cup
+      Base Popstra Celebrity Canoodled. Base Popstra Canoodled Participant: Entity={mention}, Relation=celebrities' romantic connections
+      Film Film Release Date S. Film Film Regional Release Date Film Release Distribution Medium: Entity={mention}, Relation=release dates of films
+      Film Film Other Crew. Film Film Crew Gig Film Crew Role: Entity={mention}, Relation=other crew members in films
+      Base Popstra Celebrity Breakup. Base Popstra Breakup Participant: Entity={mention}, Relation=celebrities' breakups
+      Film Film Country: Entity={mention}, Relation=country of the film
+      Music Performance Role Regular Performances. Music Group Membership Role: Entity={mention}, Relation=regular performances of musical roles
+      Sports Sports Team Roster. American Football Football Historical Roster Position Position S: Entity={mention}, Relation=roster of sports teams
+      Film Film Release Date S. Film Film Regional Release Date Film Regional Debut Venue: Entity={mention}, Relation=release dates of films
+      Time Event Instance Of Recurring Event: Entity={mention}, Relation=instances of recurring events
+      Olympics Olympic Participating Country Athletes. Olympics Olympic Athlete Affiliation Olympics: Entity={mention}, Relation=athletes from participating Olympic countries
+      Organization Endowed Organization Endowment. Measurement Unit Dated Money Value Currency: Entity={mention}, Relation=endowment of endowed organizations
+      Travel Travel Destination How To Get Here. Travel Transportation Mode Of Transportation: Entity={mention}, Relation=how to reach travel destinations
+      Baseball Baseball Team Team Stats. Baseball Baseball Team Stats Season: Entity={mention}, Relation=team statistics in baseball
+      Award Award Category Winners. Award Award Honor Ceremony: Entity={mention}, Relation=winners of award categories
+      Government Legislative Session Members. Government Government Position Held District Represented: Entity={mention}, Relation=legislative session members
+      Influence Influence Node Influenced By: Entity={mention}, Relation=influence node influenced by
+      Base Culturalevent Event Entity Involved: Entity={mention}, Relation=cultural event entities involved
+      People Ethnicity People: Entity={mention}, Relation=people's ethnicity
+      Sports Sport Pro Athletes. Sports Pro Sports Played Athlete: Entity={mention}, Relation=pro athletes in sports
+      Location Statistical Region Gdp Nominal Per Capita. Measurement Unit Dated Money Value Currency: Entity={mention}, Relation=gdp nominal per capita by statistical region
+      Location Hud County Place Place: Entity={mention}, Relation=places in hud county
+      Base Aareas Schema Administrative Area Administrative Area Type: Entity={mention}, Relation=administrative area type within administrative areas
+      Base Locations Continents Countries Within: Entity={mention}, Relation=countries within continents
+      Sports Sports Position Players. American Football Football Historical Roster Position Position S: Entity={mention}, Relation=players in sports positions
+      People Person Spouse S. People Marriage Location Of Ceremony: Entity={mention}, Relation=spouses of people
+      Education Educational Institution Students Graduates. Education Education Major Field Of Study: Entity={mention}, Relation=graduates from educational institutions
+      Film Film Written By: Entity={mention}, Relation=writers of films
+      Olympics Olympic Sport Athletes. Olympics Olympic Athlete Affiliation Country: Entity={mention}, Relation=athletes in Olympic sports
+      Music Performance Role Guest Performances. Music Recording Contribution Performance Role: Entity={mention}, Relation=guest performances in music
+      Film Film Featured Film Locations: Entity={mention}, Relation=featured film locations
+      Education Educational Institution Campus Educational Institution: Entity={mention}, Relation=educational institutions for campuses
+      Sports Pro Athlete Teams. Sports Sports Team Roster Team: Entity={mention}, Relation=teams of pro athletes
+      People Ethnicity Languages Spoken: Entity={mention}, Relation=languages spoken by ethnicities
+      Film Film Executive Produced By: Entity={mention}, Relation=executive producers of films
+      Tv Tv Producer Programs Produced. Tv Tv Producer Term Producer Type: Entity={mention}, Relation=programs produced by TV producers
+      Location Location Contains: Entity={mention}, Relation=locations containing
+      Base Biblioness Bibs Location Country: Entity={mention}, Relation=countries of bibliographic locations
+      User Ktrueman Default Domain International Organization Member States: Entity={mention}, Relation=member states of international organizations
+      Music Performance Role Track Performances. Music Track Contribution Role: Entity={mention}, Relation=track performances in music
+      Olympics Olympic Games Medals Awarded. Olympics Olympic Medal Honor Medal: Entity={mention}, Relation=medals awarded at Olympic games
+      Base Saturdaynightlive Snl Cast Member Seasons. Base Saturdaynightlive Snl Season Tenure Cast Members: Entity={mention}, Relation=seasons of SNL cast members
+    tail:
+      Soccer Football Team Current Roster. Soccer Football Roster Position Position: Entity={mention}, Relation=football positions in soccer
+      Music Artist Origin: Entity={mention}, Relation=origin of music artists
+      Ice Hockey Hockey Team Current Roster. Sports Sports Team Roster Position: Entity={mention}, Relation=positions in sports team rosters
+      Food Food Nutrients. Food Nutrition Fact Nutrient: Entity={mention}, Relation=nutritional facts of food
+      Film Actor Film. Film Performance Film: Entity={mention}, Relation=film performances
+      Award Award Nominee Award Nominations. Award Award Nomination Nominated For: Entity={mention}, Relation=nominations for awards
+      Government Political Party Politicians In This Party. Government Political Party Tenure Politician: Entity={mention}, Relation=politicians' tenure in political parties
+      Base Schemastaging Person Extra Net Worth. Measurement Unit Dated Money Value Currency: Entity={mention}, Relation=currency of dated monetary values
+      People Deceased Person Place Of Death: Entity={mention}, Relation=places of death for deceased persons
+      People Person Profession: Entity={mention}, Relation=professions of individuals
+      Location Administrative Division First Level Division Of: Entity={mention}, Relation=first-level divisions of administrative regions
+      Base Marchmadness Ncaa Basketball Tournament Seeds. Base Marchmadness Ncaa Tournament Seed Team: Entity={mention}, Relation=seed rankings of NCAA tournament teams
+      Education University International Tuition. Measurement Unit Dated Money Value Currency: Entity={mention}, Relation=currency of dated monetary values
+      Location Us County County Seat: Entity={mention}, Relation=county seats in US counties
+      Location Location Partially Contains: Entity={mention}, Relation=partial geographical containment
+      Tv Tv Program Program Creator: Entity={mention}, Relation=creators of TV programs
+      Film Film Music: Entity={mention}, Relation=music in films
+      Tv Tv Program Languages: Entity={mention}, Relation=languages of TV programs
+      Common Topic Webpage. Common Webpage Category: Entity={mention}, Relation=categories of webpages
+      User Tsegaran Random Taxonomy Subject Entry. User Tsegaran Random Taxonomy Entry Taxonomy: Entity={mention}, Relation=taxonomy entries in user-defined taxonomy
+      Education Field Of Study Students Majoring. Education Education Major Field Of Study: Entity={mention}, Relation=major fields of study in education
+      Business Business Operation Assets. Measurement Unit Dated Money Value Currency: Entity={mention}, Relation=currency of dated monetary values
+      Film Film Set Designer Film Sets Designed: Entity={mention}, Relation=film sets designed by set designers
+      Dataworld Gardening Hint Split To: Entity={mention}, Relation=split hints for gardening
+      People Person Languages: Entity={mention}, Relation=languages spoken by individuals
+      Business Job Title People With This Title. Business Employment Tenure Company: Entity={mention}, Relation=companies employing individuals
+      Location Country Form Of Government: Entity={mention}, Relation=form of government in countries
+      Base Schemastaging Organization Extra Phone Number. Base Schemastaging Phone Sandbox Service Language: Entity={mention}, Relation=service languages in phone sandbox applications
+      People Person Place Of Birth: Entity={mention}, Relation=places of birth for individuals
+      Sports Sports Team Colors: Entity={mention}, Relation=colors of sports teams
+      Education Educational Institution School Type: Entity={mention}, Relation=types of educational institutions
+      Award Award Category Winners. Award Award Honor Award Winner: Entity={mention}, Relation=award winners
+      Organization Organization Headquarters. Location Mailing Address Citytown: Entity={mention}, Relation=cities/towns of mailing addresses
+      Education Educational Degree People With This Degree. Education Education Student: Entity={mention}, Relation=students in education
+      Government Legislative Session Members. Government Government Position Held Legislative Sessions: Entity={mention}, Relation=legislative sessions held by government position
+      Film Film Distributors. Film Film Film Distributor Relationship Film Distribution Medium: Entity={mention}, Relation=mediums of film distribution
+      Education Educational Degree People With This Degree. Education Education Major Field Of Study: Entity={mention}, Relation=major fields of study in education
+      Location Hud County Place County: Entity={mention}, Relation=counties of HUD county places
+      Location Administrative Division Country: Entity={mention}, Relation=countries of administrative divisions
+      Film Film Film Production Design By: Entity={mention}, Relation=production designers of films
+      Award Award Winning Work Awards Won. Award Award Honor Award: Entity={mention}, Relation=awards given in honors
+      Organization Organization Headquarters. Location Mailing Address State Province Region: Entity={mention}, Relation=states/provinces/regions of mailing addresses
+      Base Schemastaging Organization Extra Phone Number. Base Schemastaging Phone Sandbox Contact Category: Entity={mention}, Relation=contact categories in phone sandbox
+      Tv Tv Program Country Of Origin: Entity={mention}, Relation=countries of origin for TV programs
+      Olympics Olympic Participating Country Medals Won. Olympics Olympic Medal Honor Medal: Entity={mention}, Relation=medals in the Olympics
+      Location Country Second Level Divisions: Entity={mention}, Relation=second-level divisions of countries
+      Award Award Ceremony Awards Presented. Award Award Honor Honored For: Entity={mention}, Relation=honors for which individuals are awarded
+      Organization Organization Member Member Of. Organization Organization Membership Organization: Entity={mention}, Relation=member organizations within an organization
+      Education Educational Institution Campuses: Entity={mention}, Relation=campuses of educational institutions
+      Music Artist Contribution. Music Recording Contribution Performance Role: Entity={mention}, Relation=roles in musical performances
+      Award Ranked Item Appears In Ranked Lists. Award Ranking List: Entity={mention}, Relation=ranking lists of awards
+      People Person Religion: Entity={mention}, Relation=religions of individuals
+      Travel Travel Destination Climate. Travel Travel Destination Monthly Climate Month: Entity={mention}, Relation=monthly climate of travel destinations
+      Film Special Film Performance Type Film Performance Type. Film Performance Film: Entity={mention}, Relation=films featuring performances
+      Award Award Nominee Award Nominations. Award Award Nomination Award: Entity={mention}, Relation=awards for film nominations
+      Location Statistical Region Religions. Location Religion Percentage Religion: Entity={mention}, Relation=religions represented by percentages
+      Sports Sports League Draft Picks. Sports Sports League Draft Pick School: Entity={mention}, Relation=schools associated with sports league draft picks
+      Film Film Distributors. Film Film Film Distributor Relationship Region: Entity={mention}, Relation=regions of film distribution
+      Government Politician Government Positions Held. Government Government Position Held Legislative Sessions: Entity={mention}, Relation=legislative sessions held by government position
+      Organization Role Leaders. Organization Leadership Organization: Entity={mention}, Relation=leading organizations in leadership
+      Tv Tv Network Programs. Tv Tv Network Duration Program: Entity={mention}, Relation=duration of TV programs by network
+      Soccer Football Team Current Roster. Sports Sports Team Roster Position: Entity={mention}, Relation=positions of players in sports teams
+      Music Instrument Instrumentalists: Entity={mention}, Relation=instrumentalists associated with musical instruments
+      Business Business Operation Operating Income. Measurement Unit Dated Money Value Currency: Entity={mention}, Relation=currency of dated monetary values
+      People Cause Of Death People: Entity={mention}, Relation=people who died from specific causes
+      Film Film Film Art Direction By: Entity={mention}, Relation=art direction credits for films
+      People Person Sibling S. People Sibling Relationship Sibling: Entity={mention}, Relation=siblings in family relationships
+      Film Film Cinematography: Entity={mention}, Relation=cinematography credits for films
+      Film Actor Dubbing Performances. Film Dubbing Performance Language: Entity={mention}, Relation=languages used in dubbing performances
+      Base Biblioness Bibs Location State: Entity={mention}, Relation=state locations of bibliographic records
+      Base Petbreeds City With Dogs Top Breeds. Base Petbreeds Dog City Relationship Dog Breed: Entity={mention}, Relation=dog breeds related to cities
+      People Person Gender: Entity={mention}, Relation=gender of individuals
+      Education Field Of Study Students Majoring. Education Education Student: Entity={mention}, Relation=students in the education system
+      Base Popstra Celebrity Dated. Base Popstra Dated Participant: Entity={mention}, Relation=participants in dated events
+      Sports Sports Team Roster. American Football Football Roster Position Position: Entity={mention}, Relation=positions of players in American football teams
+      Award Award Winner Awards Won. Award Award Honor Award Winner: Entity={mention}, Relation=winners of awards and honors
+      Olympics Olympic Participating Country Medals Won. Olympics Olympic Medal Honor Olympics: Entity={mention}, Relation=Olympic events associated with medals
+      Film Director Film: Entity={mention}, Relation=films directed by individuals
+      Tv Tv Producer Programs Produced. Tv Tv Producer Term Program: Entity={mention}, Relation=programs associated with television producers
+      Film Film Distributor Films Distributed. Film Film Film Distributor Relationship Film: Entity={mention}, Relation=films distributed by distributors
+      Olympics Olympic Games Sports: Entity={mention}, Relation=sports included in Olympic Games
+      Music Record Label Artist: Entity={mention}, Relation=artists signed to record labels
+      Education University Local Tuition. Measurement Unit Dated Money Value Currency: Entity={mention}, Relation=currency of dated monetary values (duplicate)
+      Film Film Story By: Entity={mention}, Relation=story credits for films
+      People Person Spouse S. People Marriage Spouse: Entity={mention}, Relation=spouses in marriages
+      Sports Sports League Teams. Sports Sports League Participation Team: Entity={mention}, Relation=teams participating in sports leagues
+      People Profession Specialization Of: Entity={mention}, Relation=specializations within professions
+      Base Americancomedy Celebrity Impressionist Celebrities Impersonated: Entity={mention}, Relation=celebrities impersonated by impressionists in American comedy
+      Tv Tv Program Genre: Entity={mention}, Relation=genres of TV programs
+      Award Award Category Nominees. Award Award Nomination Nominated For: Entity={mention}, Relation=nominations for awards
+      Language Human Language Countries Spoken In: Entity={mention}, Relation=languages spoken in countries
+      Organization Organization Headquarters. Location Mailing Address Country: Entity={mention}, Relation=location's mailing address country
+      Location Statistical Region Gdp Real. Measurement Unit Adjusted Money Value Adjustment Currency: Entity={mention}, Relation=adjustment currency for adjusted monetary values
+      Education University Fraternities And Sororities: Entity={mention}, Relation=university's fraternities and sororities
+      Award Award Nominee Award Nominations. Award Award Nomination Award Nominee: Entity={mention}, Relation=award nominee for award nomination
+      Military Military Combatant Military Conflicts. Military Military Combatant Group Combatants: Entity={mention}, Relation=military combatants in a combatant group
+      Award Award Nominated Work Award Nominations. Award Award Nomination Nominated For: Entity={mention}, Relation=nominated for an award
+      Location Location Time Zones: Entity={mention}, Relation=location's time zones
+      Film Film Dubbing Performances. Film Dubbing Performance Actor: Entity={mention}, Relation=actor's dubbing performance
+      Film Film Subject Films: Entity={mention}, Relation=films related to film subject
+      Education Educational Degree People With This Degree. Education Education Institution: Entity={mention}, Relation=educational institution
+      Education Educational Institution Colors: Entity={mention}, Relation=educational institution's colors
+      Award Award Category Category Of: Entity={mention}, Relation=category of award
+      Tv Tv Personality Tv Regular Appearances. Tv Tv Regular Personal Appearance Program: Entity={mention}, Relation=TV program with regular personal appearances
+      Film Film Language: Entity={mention}, Relation=language of the film
+      Music Group Member Membership. Music Group Membership Group: Entity={mention}, Relation=group membership in music
+      Business Business Operation Revenue. Measurement Unit Dated Money Value Currency: Entity={mention}, Relation=currency for dated monetary values
+      Film Film Film Festivals: Entity={mention}, Relation=film festivals related to the film
+      Film Actor Film. Film Performance Special Performance Type: Entity={mention}, Relation=special performance type in performance
+      Organization Non Profit Organization Registered With. Organization Non Profit Registration Registering Agency: Entity={mention}, Relation=non-profit registration's registering agency
+      Government Politician Government Positions Held. Government Government Position Held Jurisdiction Of Office: Entity={mention}, Relation=jurisdiction of government position held
+      Base Aareas Schema Administrative Area Administrative Parent: Entity={mention}, Relation=administrative area's administrative parent
+      Award Award Winning Work Awards Won. Award Award Honor Award Winner: Entity={mention}, Relation=award winner for award honor
+      Organization Organization Place Founded: Entity={mention}, Relation=organization's place of founding
+      Soccer Football Player Current Team. Sports Sports Team Roster Team: Entity={mention}, Relation=team roster of a sports team
+      Government Politician Government Positions Held. Government Government Position Held Basic Title: Entity={mention}, Relation=basic title held in government position
+      Music Artist Track Contributions. Music Track Contribution Role: Entity={mention}, Relation=role in track contribution
+      Base Localfood Seasonal Month Produce Available. Base Localfood Produce Availability Seasonal Months: Entity={mention}, Relation=seasonal months for produce availability
+      Celebrities Celebrity Celebrity Friends. Celebrities Friendship Friend: Entity={mention}, Relation=friendship between celebrities
+      Sports Professional Sports Team Draft Picks. Sports Sports League Draft Pick School: Entity={mention}, Relation=school's sports league draft pick
+      Award Hall Of Fame Inductees. Award Hall Of Fame Induction Inductee: Entity={mention}, Relation=hall of fame inductee
+      Influence Influence Node Peers. Influence Peer Relationship Peers: Entity={mention}, Relation=peer relationships
+      Medicine Disease Risk Factors: Entity={mention}, Relation=disease risk factors
+      Broadcast Content Artist: Entity={mention}, Relation=broadcast artist
+      Film Film Estimated Budget. Measurement Unit Dated Money Value Currency: Entity={mention}, Relation=currency value over time
+      Military Military Conflict Combatants. Military Military Combatant Group Combatants: Entity={mention}, Relation=military combatant group members
+      Location Capital Of Administrative Division Capital Of. Location Administrative Division Capital Relationship Administrative Division: Entity={mention}, Relation=capital of an administrative division
+      Tv Tv Program Regular Cast. Tv Regular Tv Appearance Actor: Entity={mention}, Relation=actor in regular TV appearances
+      People Deceased Person Place Of Burial: Entity={mention}, Relation=burial place of deceased persons
+      Location Location Adjoin S. Location Adjoining Relationship Adjoins: Entity={mention}, Relation=adjoining locations
+      Music Group Member Membership. Music Group Membership Role: Entity={mention}, Relation=role in music group membership
+      Award Award Ceremony Awards Presented. Award Award Honor Award Winner: Entity={mention}, Relation=award winners
+      Film Film Prequel: Entity={mention}, Relation=film prequel
+      Film Film Produced By: Entity={mention}, Relation=produced by in film
+      Tv Tv Program Tv Producer. Tv Tv Producer Term Producer Type: Entity={mention}, Relation=type of TV producer
+      Sports Sports Position Players. Sports Sports Team Roster Team: Entity={mention}, Relation=team of roster position
+      Olympics Olympic Games Participating Countries: Entity={mention}, Relation=countries participating in the Olympics
+      Music Genre Parent Genre: Entity={mention}, Relation=parent genre in music
+      Tv Tv Writer Tv Programs. Tv Tv Program Writer Relationship Tv Program: Entity={mention}, Relation=TV program related to writers
+      Music Genre Artists: Entity={mention}, Relation=artists by music genre
+      Film Film Genre: Entity={mention}, Relation=genre of film
+      People Person Employment History. Business Employment Tenure Company: Entity={mention}, Relation=company employment tenure
+      Education University Domestic Tuition. Measurement Unit Dated Money Value Currency: Entity={mention}, Relation=currency value over time
+      People Person Nationality: Entity={mention}, Relation=nationality of person
+      Location Country Capital: Entity={mention}, Relation=capital of the country
+      Location Statistical Region Gni Per Capita In Ppp Dollars. Measurement Unit Dated Money Value Currency: Entity={mention}, Relation=currency value over time
+      Base Aareas Schema Administrative Area Capital: Entity={mention}, Relation=capital of administrative area
+      Business Business Operation Industry: Entity={mention}, Relation=industry of business operations
+      Location Hud Foreclosure Area Estimated Number Of Mortgages. Measurement Unit Dated Integer Source: Entity={mention}, Relation=source of dated integer
+      Film Film Other Crew. Film Film Crew Gig Crewmember: Entity={mention}, Relation=crewmember in film crew gig
+      Base Popstra Location Vacationers. Base Popstra Vacation Choice Vacationer: Entity={mention}, Relation=vacationer preferences for vacations
+      Film Film Film Format: Entity={mention}, Relation=film format type
+      Medicine Disease Notable People With This Condition: Entity={mention}, Relation=notable individuals with this health condition
+      Film Film Costume Design By: Entity={mention}, Relation=costume designer contributions
+      Government Government Office Category Officeholders. Government Government Position Held Jurisdiction Of Office: Entity={mention}, Relation=jurisdiction tied to government position
+      Location Statistical Region Gdp Nominal. Measurement Unit Dated Money Value Currency: Entity={mention}, Relation=currency value over time
+      Sports Sports Team Roster. Baseball Baseball Roster Position Position: Entity={mention}, Relation=player's position in baseball roster
+      Award Award Winning Work Awards Won. Award Award Honor Honored For: Entity={mention}, Relation=reason for receiving an award
+      Olympics Olympic Sport Athletes. Olympics Olympic Athlete Affiliation Olympics: Entity={mention}, Relation=Olympic participation of athletes
+      Celebrities Celebrity Sexual Relationships. Celebrities Romantic Relationship Celebrity: Entity={mention}, Relation=celebrity romantic involvement
+      People Marriage Union Type Unions Of This Type. People Marriage Location Of Ceremony: Entity={mention}, Relation=location where marriage ceremony takes place
+      Organization Organization Child. Organization Organization Relationship Child: Entity={mention}, Relation=child organization in a relationship
+      Organization Organization Founder Organizations Founded: Entity={mention}, Relation=organizations established by a founder
+      Sports Sports Team Sport: Entity={mention}, Relation=sport associated with a sports team
+      People Ethnicity Geographic Distribution: Entity={mention}, Relation=geographic distribution of an ethnicity
+      Location Statistical Region Places Exported To. Location Imports And Exports Exported To: Entity={mention}, Relation=destinations for exports
+      Location Country Official Language: Entity={mention}, Relation=official language of a country
+      Film Film Production Companies: Entity={mention}, Relation=companies involved in film production
+      User Jg Default Domain Olympic Games Sports: Entity={mention}, Relation=sports associated with the Olympic games
+      Time Event Locations: Entity={mention}, Relation=locations for events
+      People Person Spouse S. People Marriage Type Of Union: Entity={mention}, Relation=type of marital union
+      Government Governmental Body Members. Government Government Position Held Legislative Sessions: Entity={mention}, Relation=legislative sessions relevant to a government position
+      Media Common Netflix Genre Titles: Entity={mention}, Relation=titles categorized under a Netflix genre
+      User Alexander Philosophy Philosopher Interests: Entity={mention}, Relation=interests of a philosopher
+      Film Film Runtime. Film Film Cut Film Release Region: Entity={mention}, Relation=regions where the film is released
+      Education Educational Institution Students Graduates. Education Education Student: Entity={mention}, Relation=student in an educational context
+      Base Eating Practicer Of Diet Diet: Entity={mention}, Relation=diet followed by an individual
+      Tv Non Character Role Tv Regular Personal Appearances. Tv Tv Regular Personal Appearance Person: Entity={mention}, Relation=person with regular appearances on TV
+      Sports Sports Position Players. Sports Sports Team Roster Position: Entity={mention}, Relation=player position on a sports team roster
+      Sports Professional Sports Team Draft Picks. Sports Sports League Draft Pick Draft: Entity={mention}, Relation=draft pick in a sports league
+      Medicine Symptom Symptom Of: Entity={mention}, Relation=symptoms
+      Film Person Or Entity Appearing In Film Films. Film Personal Film Appearance Type Of Appearance: Entity={mention}, Relation=type of appearance in personal films
+      Sports Sports Team Location Teams: Entity={mention}, Relation=teams' locations in sports
+      American Football Football Team Current Roster. Sports Sports Team Roster Position: Entity={mention}, Relation=position in sports team rosters
+      People Person Places Lived. People Place Lived Location: Entity={mention}, Relation=places lived by people
+      Location Statistical Region Rent50 2. Measurement Unit Dated Money Value Currency: Entity={mention}, Relation=currency of dated money values
+      Film Film Personal Appearances. Film Personal Film Appearance Person: Entity={mention}, Relation=person in personal film appearances
+      Music Instrument Family: Entity={mention}, Relation=families of musical instruments
+      Sports Sports Team Roster. Basketball Basketball Roster Position Position: Entity={mention}, Relation=positions in basketball rosters
+      Base Schemastaging Organization Extra Phone Number. Base Schemastaging Phone Sandbox Service Location: Entity={mention}, Relation=service locations for phone sandboxes
+      Film Film Release Date S. Film Film Regional Release Date Film Release Region: Entity={mention}, Relation=regions for film release dates
+      Award Award Category Disciplines Or Subjects: Entity={mention}, Relation=subjects or disciplines of award categories
+      Base Popstra Celebrity Friendship. Base Popstra Friendship Participant: Entity={mention}, Relation=participants in friendships
+      Music Performance Role Regular Performances. Music Group Membership Group: Entity={mention}, Relation=groups in musical memberships
+      Film Film Edited By: Entity={mention}, Relation=editors of films
+      Base X2010fifaworldcupsouthafrica World Cup Squad Current World Cup Squad. Base X2010fifaworldcupsouthafrica Current World Cup Squad Current Club: Entity={mention}, Relation=current clubs for World Cup squads
+      Base Popstra Celebrity Canoodled. Base Popstra Canoodled Participant: Entity={mention}, Relation=participants in canoodling
+      Film Film Release Date S. Film Film Regional Release Date Film Release Distribution Medium: Entity={mention}, Relation=distribution mediums for film release dates
+      Film Film Other Crew. Film Film Crew Gig Film Crew Role: Entity={mention}, Relation=roles in film crew gigs
+      Base Popstra Celebrity Breakup. Base Popstra Breakup Participant: Entity={mention}, Relation=participants in breakups
+      Film Film Country: Entity={mention}, Relation=countries for films
+      Music Performance Role Regular Performances. Music Group Membership Role: Entity={mention}, Relation=roles in musical group memberships
+      Sports Sports Team Roster. American Football Football Historical Roster Position Position S: Entity={mention}, Relation=historical positions in American football
+      Film Film Release Date S. Film Film Regional Release Date Film Regional Debut Venue: Entity={mention}, Relation=venues for regional film debuts
+      Time Event Instance Of Recurring Event: Entity={mention}, Relation=instances of recurring events
+      Olympics Olympic Participating Country Athletes. Olympics Olympic Athlete Affiliation Olympics: Entity={mention}, Relation=affiliations of Olympic athletes
+      Organization Endowed Organization Endowment. Measurement Unit Dated Money Value Currency: Entity={mention}, Relation=currency of dated money values (duplicate)
+      Travel Travel Destination How To Get Here. Travel Transportation Mode Of Transportation: Entity={mention}, Relation=modes of transportation in travel
+      Baseball Baseball Team Team Stats. Baseball Baseball Team Stats Season: Entity={mention}, Relation=season statistics for baseball teams
+      Award Award Category Winners. Award Award Honor Ceremony: Entity={mention}, Relation=ceremonies for award honors
+      Government Legislative Session Members. Government Government Position Held District Represented: Entity={mention}, Relation=district represented by government position held
+      Influence Influence Node Influenced By: Entity={mention}, Relation=influence node influenced by
+      Base Culturalevent Event Entity Involved: Entity={mention}, Relation=entities involved in cultural events
+      People Ethnicity People: Entity={mention}, Relation=ethnic group of people
+      Sports Sport Pro Athletes. Sports Pro Sports Played Athlete: Entity={mention}, Relation=athlete in professional sports played
+      Location Statistical Region Gdp Nominal Per Capita. Measurement Unit Dated Money Value Currency: Entity={mention}, Relation=currency of dated money value
+      Location Hud County Place Place: Entity={mention}, Relation=place in Hudson County
+      Base Aareas Schema Administrative Area Administrative Area Type: Entity={mention}, Relation=administrative area type of administrative area
+      Base Locations Continents Countries Within: Entity={mention}, Relation=countries within continents
+      Sports Sports Position Players. American Football Football Historical Roster Position Position S: Entity={mention}, Relation=positions held in historical American football rosters
+      People Person Spouse S. People Marriage Location Of Ceremony: Entity={mention}, Relation=location of marriage ceremony
+      Education Educational Institution Students Graduates. Education Education Major Field Of Study: Entity={mention}, Relation=major field of study in education
+      Film Film Written By: Entity={mention}, Relation=screenwriters of films
+      Olympics Olympic Sport Athletes. Olympics Olympic Athlete Affiliation Country: Entity={mention}, Relation=countries of Olympic athlete affiliations
+      Music Performance Role Guest Performances. Music Recording Contribution Performance Role: Entity={mention}, Relation=performance roles in recording contributions
+      Film Film Featured Film Locations: Entity={mention}, Relation=locations featured in films
+      Education Educational Institution Campus Educational Institution: Entity={mention}, Relation=educational institution of campus
+      Sports Pro Athlete Teams. Sports Sports Team Roster Team: Entity={mention}, Relation=team in sports team roster
+      People Ethnicity Languages Spoken: Entity={mention}, Relation=languages spoken by ethnic groups
+      Film Film Executive Produced By: Entity={mention}, Relation=executive producers of films
+      Tv Tv Producer Programs Produced. Tv Tv Producer Term Producer Type: Entity={mention}, Relation=producer type in TV production
+      Location Location Contains: Entity={mention}, Relation=location contains
+      Base Biblioness Bibs Location Country: Entity={mention}, Relation=country in bibliographic locations
+      User Ktrueman Default Domain International Organization Member States: Entity={mention}, Relation=member states of international organizations
+      Music Performance Role Track Performances. Music Track Contribution Role: Entity={mention}, Relation=role in track contributions
+      Olympics Olympic Games Medals Awarded. Olympics Olympic Medal Honor Medal: Entity={mention}, Relation=medal awarded in the Olympics
+      Base Saturdaynightlive Snl Cast Member Seasons. Base Saturdaynightlive Snl Season Tenure Cast Members: Entity={mention}, Relation=cast members of Saturday Night Live's season tenure
