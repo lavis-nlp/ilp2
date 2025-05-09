@@ -161,18 +161,26 @@ class Assembler:
                     for mid in list(mid_set)[: self.mentions_per_candidate]
                 )
             else:
-                top_n_vids = self.get_top_n_vids(direction=direction, task=(mid, rid))
+                top_n_vids = self.get_top_n_vids(
+                    direction=direction,
+                    task=(mid, rid),
+                )
 
                 top_n_entity_names: list[str] = [
                     self.dataset.idmap.vid2str[vid].split(":")[1] for vid in top_n_vids
                 ]
 
-                candidates = "\n".join(
-                    f"{i}: {top_n_entity_names[i]}, {', '.join(self.dataset.idmap.mid2str[mid] for mid in list(mid_set)[:self.mentions_per_candidate])}"
-                    for i, mid_set in enumerate(mid_sets)
-                )
+                candidates = ""
+                for i, mid_set in enumerate(mid_sets):
+                    mentions = f"{top_n_entity_names[i]},"
+                    mentions += ", ".join(
+                        self.dataset.idmap.mid2str[mid]
+                        for mid in list(mid_set)[: self.mentions_per_candidate]
+                    )
+                    candidates += f"{i}: {mentions}"
 
-                candidates.replace(",\n", "\n")
+                # candidates.replace(",\n", "\n")
+                breakpoint()
 
         template = self.template.format(
             system=system,
@@ -261,7 +269,7 @@ class Assembler:
                             for i, task in enumerate(tail_tasks)  # type: ignore
                         }
 
-                else:
+                elif "BLP" in dataset_name:
 
                     prefix = dataset_name.split("/")[1]
 
@@ -276,7 +284,10 @@ class Assembler:
                         scores_head_dict = scores["head predictions"]
                         scores_tail_dict = scores["tail predictions"]
 
-        assert question is not None, "did not find {dataset_name} in {question_path}"
+                else:
+                    assert False, f"unknown dataset: {dataset_name}"
+
+        assert question is not None, f"did not find {dataset_name} in {question_path}"
 
         texts = None
         if texts_head_path is not None and texts_tail_path is not None:
