@@ -737,3 +737,30 @@
       Music Performance Role Track Performances. Music Track Contribution Role: Entity={mention}, Relation=role in track contributions
       Olympics Olympic Games Medals Awarded. Olympics Olympic Medal Honor Medal: Entity={mention}, Relation=medal awarded in the Olympics
       Base Saturdaynightlive Snl Cast Member Seasons. Base Saturdaynightlive Snl Season Tenure Cast Members: Entity={mention}, Relation=cast members of Saturday Night Live's season tenure
+- datasets:
+    - BLP/WN18RR
+  prompts:
+    head:
+      Also See: Entity={mention}, Relation=also see
+      Derivationally Related Form: Entity={mention}, Relation=derivationally related form
+      Has Part: Entity={mention}, Relation=has part
+      Hypernym: Entity={mention}, Relation=hypernym
+      Instance Hypernym: Entity={mention}, Relation=instance hypernym
+      Member Meronym: Entity={mention}, Relation=member meronym
+      Member Of Domain Region: Entity={mention}, Relation=member of domain region
+      Member Of Domain Usage: Entity={mention}, Relation=member of domain usage
+      Similar To: Entity={mention}, Relation=similar to
+      Synset Domain Topic Of: Entity={mention}, Relation=synset domain topic of
+      Verb Group: Entity={mention}, Relation=verb group
+    tail:
+      Also See: Entity={mention}, Relation=also see
+      Derivationally Related Form: Entity={mention}, Relation=derivationally related form
+      Has Part: Entity={mention}, Relation=has part
+      Hypernym: Entity={mention}, Relation=hypernym
+      Instance Hypernym: Entity={mention}, Relation=instance hypernym
+      Member Meronym: Entity={mention}, Relation=member meronym
+      Member Of Domain Region: Entity={mention}, Relation=member of domain region
+      Member Of Domain Usage: Entity={mention}, Relation=member of domain usage
+      Similar To: Entity={mention}, Relation=similar to
+      Synset Domain Topic Of: Entity={mention}, Relation=synset domain topic of
+      Verb Group: Entity={mention}, Relation=verb group
