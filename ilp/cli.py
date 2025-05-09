@@ -261,9 +261,6 @@ def run_experiment(
 ):
     # iterate all combinations of sweeping parameters
     # and create a config for each
-
-    breakpoint()
-
     datasets = dict(
         irt2.loader.from_config_file(
             path(dataset_config, is_file=True),

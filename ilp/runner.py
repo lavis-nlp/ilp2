@@ -14,7 +14,6 @@ from irt2.dataset import IRT2
 from irt2.evaluation import Predictions, Scores, evaluate
 from irt2.types import MID, RID, VID, Split, Task
 from ktz.collections import dflat, path
-from pydantic import BaseModel
 from rich.progress import track
 
 import ilp
@@ -464,6 +463,8 @@ class Runner:
             zipped,
             description=f'{"parsing":12s}',
             total=len(ctxs),
+            console=ilp.console,
+            disable=ilp.debug,
         )
 
         for ctx, output, gt_vids in tracked:
