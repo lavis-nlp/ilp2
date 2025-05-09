@@ -2,7 +2,7 @@ import pickle
 from dataclasses import dataclass
 from itertools import islice
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Sequence
 
 import h5py
 import numpy as np
@@ -33,10 +33,9 @@ class Assembler:
     system: list[str]
     question: dict[Literal["head", "tail"], dict[str, str]]
     texts: dict[Literal["head", "tail"], dict[tuple[MID, RID] | MID, list[str]]] | None
-    scores_head: dict[tuple[int, int], np.ndarray] | None
-    scores_tail: dict[tuple[int, int], np.ndarray] | None
+    scores_head: dict[tuple[int, int], Sequence[VID]] | None
+    scores_tail: dict[tuple[int, int], Sequence[VID]] | None
     n_candidates: int
-    mid2idx: dict[int, int] | None
     mentions_per_candidate: int
 
     def _assemble_text(
@@ -93,14 +92,7 @@ class Assembler:
         self,
         direction: Literal["head", "tail"],
         task: tuple[MID, RID],
-    ) -> list[int]:
-        if "IRT2" in self.dataset_name:
-            assert self.mid2idx is not None
-            idx = self.mid2idx.get(task[0])
-            if idx is None:
-                return []
-            task = (idx, task[1])
-
+    ) -> Sequence[VID]:
         scores = self._get_scores_for_direction(
             direction=direction,
             task=task,
@@ -109,17 +101,14 @@ class Assembler:
         if scores is None:
             return []
 
-        if "IRT2" in self.dataset_name:
-            scores = np.argsort(scores)[::-1]
-
-        return list(map(int, scores))
+        return scores
 
     def get_top_n_vids(
         self,
         *args,
         n: int | None = None,
         **kwargs,
-    ) -> list[int]:
+    ) -> Sequence[VID]:
         if n is None:
             n = self.n_candidates
         return self.get_ranked_vids(*args, **kwargs)[:n]
@@ -179,8 +168,8 @@ class Assembler:
                     )
                     candidates += f"{i}: {mentions}"
 
-                # candidates.replace(",\n", "\n")
-                breakpoint()
+        candidates.replace(",\n", "\n")
+        breakpoint()
 
         template = self.template.format(
             system=system,
@@ -197,6 +186,102 @@ class Assembler:
         )
 
         return prompt
+
+    @staticmethod
+    def _load_scores_irt(
+        dataset: IRT2,
+        split_str: str,
+    ):
+        heads: dict[tuple[int, int], Sequence[VID]] | None = None
+        tails: dict[tuple[int, int], Sequence[VID]] | None = None
+
+        scores_fname = f"*scores.{split_str}.h5"
+        scores_path = next(dataset.path.glob(f"*scores.{split_str}.h5"), None)
+        assert scores_path != None, scores_fname
+
+        mid2idx_fname = "mid2idx-irt2-*.pkl"
+        mid2idx_path = next(dataset.path.glob(mid2idx_fname), None)
+        assert mid2idx_path != None, mid2idx_fname
+        with mid2idx_path.open(mode="rb") as file:
+            mid2idx = pickle.load(file)
+
+        def to_vids(scores):
+            vids = np.argsort(scores)[::-1]
+            return list(map(int, vids))
+
+        with h5py.File(scores_path, "r") as scores_fd:
+            head_tasks = scores_fd["head"]["tasks"]  # type: ignore
+            head_scores = scores_fd["head"]["scores"]  # type: ignore
+
+            heads = {
+                (mid2idx.get(task[0]), task[1]): to_vids(head_scores[i])  # type: ignore
+                for i, task in enumerate(head_tasks)  # type: ignore
+            }
+
+            tail_tasks = scores_fd["tail"]["tasks"]  # type: ignore
+            tail_scores = scores_fd["tail"]["scores"]  # type: ignore
+
+            tails = {
+                (task[0], task[1]): to_vids(tail_scores[i])  # type: ignore
+                for i, task in enumerate(tail_tasks)  # type: ignore
+            }
+
+        return heads, tails
+
+    @staticmethod
+    def _load_scores_blp(
+        dataset: IRT2,
+        dataset_name: str,
+        split_str: str,
+    ):
+        prefix = dataset_name.split("/")[1]
+
+        scores_fname = f"{prefix}-{split_str}.pkl"
+        scores_path = next(dataset.path.glob(scores_fname), None)
+        assert scores_path != None, scores_fname
+
+        with open(scores_path, "rb") as file:
+            scores = pickle.load(file)
+            scores_head = scores["head predictions"]
+            scores_tail = scores["tail predictions"]
+
+        return scores_head, scores_tail
+
+    @classmethod
+    def _load_scores(
+        cls,
+        dataset: IRT2,
+        dataset_name: str,
+        split_str: str,
+    ):
+        scores_head: dict[tuple[int, int], Sequence[VID]]
+        scores_tail: dict[tuple[int, int], Sequence[VID]]
+
+        if "IRT2" in dataset_name:
+            scores_head, scores_tail = cls._load_scores_irt(
+                dataset=dataset,
+                split_str=split_str,
+            )
+
+        elif "BLP" in dataset_name:
+            scores_head, scores_tail = cls._load_scores_blp(
+                dataset=dataset,
+                dataset_name=dataset_name,
+                split_str=split_str,
+            )
+
+        else:
+            assert False, f"unknown dataset: {dataset_name}"
+
+        if split_str == "validation":
+            assert set(scores_head) == set(dataset.open_kgc_val_heads)
+            assert set(scores_tail) == set(dataset.open_kgc_val_tails)
+
+        if split_str == "test":
+            assert set(scores_head) == set(dataset.open_kgc_test_heads)
+            assert set(scores_tail) == set(dataset.open_kgc_test_tails)
+
+        return scores_head, scores_tail
 
     @classmethod
     def from_paths(
@@ -232,60 +317,13 @@ class Assembler:
                     continue
                 question = conf["prompts"]
 
-            scores_head_dict: dict[tuple[int, int], np.ndarray] | None = None
-            scores_tail_dict: dict[tuple[int, int], np.ndarray] | None = None
-
-            mid2idx = None
-
+            scores_head, scores_tail = None, None
             if n_candidates > 0:
-
-                if "IRT2" in dataset_name:
-                    scores_path = next(
-                        dataset.path.glob(f"*scores.{split_str}.h5"),
-                        None,
-                    )
-                    mid2idx_path = next(
-                        dataset.path.glob("mid2idx-irt2-*.pkl"),
-                        None,
-                    )
-
-                    if mid2idx_path:
-                        with open(mid2idx_path, "rb") as file:
-                            mid2idx = pickle.load(file)
-
-                    assert scores_path != None
-
-                    with h5py.File(scores_path, "r") as scores_fd:
-                        head_tasks = scores_fd["head"]["tasks"]  # type: ignore
-                        head_scores = scores_fd["head"]["scores"]  # type: ignore
-                        scores_head_dict = {
-                            (task[0], task[1]): head_scores[i]  # type: ignore
-                            for i, task in enumerate(head_tasks)  # type: ignore
-                        }
-                        tail_tasks = scores_fd["tail"]["tasks"]  # type: ignore
-                        tail_scores = scores_fd["tail"]["scores"]  # type: ignore
-                        scores_tail_dict = {
-                            (task[0], task[1]): tail_scores[i]  # type: ignore
-                            for i, task in enumerate(tail_tasks)  # type: ignore
-                        }
-
-                elif "BLP" in dataset_name:
-
-                    prefix = dataset_name.split("/")[1]
-
-                    scores_path = next(
-                        dataset.path.glob(f"{prefix}-{split_str}.pkl"), None
-                    )
-                    assert scores_path != None
-
-                    with open(scores_path, "rb") as file:
-                        scores = pickle.load(file)
-
-                        scores_head_dict = scores["head predictions"]
-                        scores_tail_dict = scores["tail predictions"]
-
-                else:
-                    assert False, f"unknown dataset: {dataset_name}"
+                scores_head, scores_tail = cls._load_scores(
+                    dataset,
+                    dataset_name,
+                    split_str,
+                )
 
         assert question is not None, f"did not find {dataset_name} in {question_path}"
 
@@ -311,9 +349,8 @@ class Assembler:
             system=system,
             question=question,
             texts=texts,
-            scores_head=scores_head_dict,
-            scores_tail=scores_tail_dict,
+            scores_head=scores_head,
+            scores_tail=scores_tail,
             n_candidates=n_candidates,
-            mid2idx=mid2idx,
             mentions_per_candidate=mentions_per_candidate,
         )
