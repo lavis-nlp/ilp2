@@ -1,6 +1,6 @@
 import pickle
-from functools import partial
 from dataclasses import dataclass
+from functools import partial
 from itertools import islice
 from pathlib import Path
 from typing import Literal, Sequence
@@ -68,39 +68,26 @@ class Assembler:
 
     def get_n_mids_per_candidate(
         self,
-        direction: Literal["head", "tail"],
-        mid: MID,
-        rid: RID,
-    ) -> list[set[MID]]:
-
-        top_n_score_vids = self.get_top_n_vids(
-            direction=direction,
-            task=(mid, rid),
-        )
-
-        mid_sets = []
-
+        vid: VID,
+    ) -> set[MID]:
         vid2mids = self.dataset.idmap.vid2mids
-        for vid in top_n_score_vids:
-            if self.mentions_per_candidate == 0:
-                mid_sets.append(set())
-                continue
 
-            mid_set = set()
-            for split in self.search_splits:
-                if vid in vid2mids[split]:
-                    mid_set |= vid2mids[split][vid]
+        mid_set = set()
+        for split in self.search_splits:
+            if vid in vid2mids[split]:
+                mid_set |= vid2mids[split][vid]
 
-            # assert len(mid_set)
-            mid_sets.append(mid_set)
-
-        return mid_sets
+        # assert len(mid_set)
+        return mid_set
 
     def get_ranked_vids(
         self,
         direction: Literal["head", "tail"],
         task: tuple[MID, RID],
     ) -> Sequence[VID]:
+        assert self.scores_head is not None
+        assert self.scores_tail is not None
+
         if direction == "head":
             scores = self.scores_head.get(task)
         else:
@@ -121,6 +108,37 @@ class Assembler:
             n = self.n_candidates
         return self.get_ranked_vids(*args, **kwargs)[:n]
 
+    def _assemble_candidates(self, direction, mid, rid):
+        if self.mode == "default":
+            # candidates = ", ".join(
+            #     self.dataset.idmap.mid2str[mid]
+            #     for mid_set in mid_sets
+            #     for mid in list(mid_set)[: self.mentions_per_candidate]
+            # )
+            assert False, "deprecated?"
+
+        top_n_vids = self.get_top_n_vids(
+            direction=direction,
+            task=(mid, rid),
+            n=self.n_candidates,
+        )
+
+        buf = []
+        for i, vid in enumerate(top_n_vids):
+            name = self.dataset.idmap.vid2str[vid].split(":")[1]
+            midset = self.get_n_mids_per_candidate(vid)
+
+            # for blp, mentions are merely lowercased entity names
+            if not midset or "BLP" in self.dataset.name:
+                buf.append(f"{i}:  {name}")
+                continue
+
+            mids = list(midset)[: self.mentions_per_candidate]
+            mentions = [self.dataset.idmap.mid2str[mid] for mid in mids]
+            buf.append(f"{i}: {name}, " + ",".join(mentions))
+
+        return "\n".join(buf)
+
     def assemble(
         self,
         direction: Literal["head", "tail"],
@@ -136,34 +154,7 @@ class Assembler:
         system = " ".join(self.system)
 
         if self.n_candidates > 0 and candidates == "":
-            mid_sets = self.get_n_mids_per_candidate(direction, mid, rid)
-
-            if self.mode == "default":
-                candidates = ", ".join(
-                    self.dataset.idmap.mid2str[mid]
-                    for mid_set in mid_sets
-                    for mid in list(mid_set)[: self.mentions_per_candidate]
-                )
-            else:
-                top_n_vids = self.get_top_n_vids(
-                    direction=direction,
-                    task=(mid, rid),
-                )
-
-                top_n_entity_names: list[str] = [
-                    self.dataset.idmap.vid2str[vid].split(":")[1] for vid in top_n_vids
-                ]
-
-                candidates = ""
-                for i, mid_set in enumerate(mid_sets):
-                    mentions = f"{top_n_entity_names[i]},"
-                    mentions += ", ".join(
-                        self.dataset.idmap.mid2str[mid]
-                        for mid in list(mid_set)[: self.mentions_per_candidate]
-                    )
-                    candidates += f"{i}: {mentions}\n"
-
-        candidates.replace(",\n", "\n")
+            candidates = self._assemble_candidates(direction, mid, rid)
 
         template = self.template.format(
             system=system,
@@ -210,7 +201,6 @@ class Assembler:
                 for i, task in enumerate(tasks)  # type: ignore
             }
 
-
         with h5py.File(scores_path, "r") as scores_fd:
             heads = transform("head")
             tails = transform("tail")
@@ -229,7 +219,7 @@ class Assembler:
         scores_path = next(dataset.path.glob(scores_fname), None)
         assert scores_path != None, scores_fname
 
-        ilp.console.log(f'loading BLP scores from {scores_fname}')
+        ilp.console.log(f"loading BLP scores from {scores_fname}")
         with open(scores_path, "rb") as file:
             scores = pickle.load(file)
             scores_head = scores["head predictions"]
@@ -240,8 +230,8 @@ class Assembler:
         # sub-sampled blp graphs lose some vertices
         # since they have fully inductive triples to predict
         # ... we remove unknown vertices here
-        if 'subsample_kgc' in dataset.meta:
-            ilp.console.log('subsampled BLP dataset - removing unknown vertices')
+        if "subsample_kgc" in dataset.meta:
+            ilp.console.log("subsampled BLP dataset - removing unknown vertices")
 
             new = {}
             for task in tracked(dataset.open_kgc_val_heads):
