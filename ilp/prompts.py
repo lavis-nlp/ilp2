@@ -1,4 +1,5 @@
 import pickle
+from functools import partial
 from dataclasses import dataclass
 from itertools import islice
 from pathlib import Path
@@ -10,6 +11,9 @@ import yaml
 from irt2.dataset import IRT2
 from irt2.types import MID, RID, VID, Split
 from ktz.collections import path
+from rich.progress import track
+
+import ilp
 
 Tasks = dict[tuple[MID, RID], set[VID]]
 
@@ -29,6 +33,7 @@ class Assembler:
         "ranker-results",
     ]
     split: Split
+    search_splits: tuple[Split, ...]
     template: str
     system: list[str]
     question: dict[Literal["head", "tail"], dict[str, str]]
@@ -75,15 +80,18 @@ class Assembler:
 
         mid_sets = []
 
+        vid2mids = self.dataset.idmap.vid2mids
         for vid in top_n_score_vids:
             if self.mentions_per_candidate == 0:
                 mid_sets.append(set())
                 continue
 
-            mid_set = self.dataset.idmap.vid2mids[Split.train][vid]
-            if mid_set is None and self.split == Split.test:
-                mid_set = self.dataset.idmap.vid2mids[Split.valid][vid]
-                assert mid_set is not None
+            mid_set = set()
+            for split in self.search_splits:
+                if vid in vid2mids[split]:
+                    mid_set |= vid2mids[split][vid]
+
+            # assert len(mid_set)
             mid_sets.append(mid_set)
 
         return mid_sets
@@ -93,10 +101,10 @@ class Assembler:
         direction: Literal["head", "tail"],
         task: tuple[MID, RID],
     ) -> Sequence[VID]:
-        scores = self._get_scores_for_direction(
-            direction=direction,
-            task=task,
-        )
+        if direction == "head":
+            scores = self.scores_head.get(task)
+        else:
+            scores = self.scores_tail.get(task)
 
         if scores is None:
             return []
@@ -112,19 +120,6 @@ class Assembler:
         if n is None:
             n = self.n_candidates
         return self.get_ranked_vids(*args, **kwargs)[:n]
-
-    def _get_scores_for_direction(
-        self,
-        direction: Literal["head", "tail"],
-        task: tuple[int, int],
-    ):
-        assert self.scores_head
-        assert self.scores_tail
-
-        if direction == "head":
-            return self.scores_head.get(task)
-        else:
-            return self.scores_tail.get(task)
 
     def assemble(
         self,
@@ -166,10 +161,9 @@ class Assembler:
                         self.dataset.idmap.mid2str[mid]
                         for mid in list(mid_set)[: self.mentions_per_candidate]
                     )
-                    candidates += f"{i}: {mentions}"
+                    candidates += f"{i}: {mentions}\n"
 
         candidates.replace(",\n", "\n")
-        breakpoint()
 
         template = self.template.format(
             system=system,
@@ -205,26 +199,21 @@ class Assembler:
         with mid2idx_path.open(mode="rb") as file:
             mid2idx = pickle.load(file)
 
-        def to_vids(scores):
-            vids = np.argsort(scores)[::-1]
-            return list(map(int, vids))
+        idx2mid = {v: k for k, v in mid2idx.items()}
+
+        def transform(ht):
+            tasks = scores_fd[ht]["tasks"]  # type: ignore
+            scores = scores_fd[ht]["scores"]  # type: ignore
+
+            return {
+                (idx2mid[task[0]], task[1]): np.argsort(scores[i])[::-1].tolist()  # type: ignore
+                for i, task in enumerate(tasks)  # type: ignore
+            }
+
 
         with h5py.File(scores_path, "r") as scores_fd:
-            head_tasks = scores_fd["head"]["tasks"]  # type: ignore
-            head_scores = scores_fd["head"]["scores"]  # type: ignore
-
-            heads = {
-                (mid2idx.get(task[0]), task[1]): to_vids(head_scores[i])  # type: ignore
-                for i, task in enumerate(head_tasks)  # type: ignore
-            }
-
-            tail_tasks = scores_fd["tail"]["tasks"]  # type: ignore
-            tail_scores = scores_fd["tail"]["scores"]  # type: ignore
-
-            tails = {
-                (task[0], task[1]): to_vids(tail_scores[i])  # type: ignore
-                for i, task in enumerate(tail_tasks)  # type: ignore
-            }
+            heads = transform("head")
+            tails = transform("tail")
 
         return heads, tails
 
@@ -240,10 +229,30 @@ class Assembler:
         scores_path = next(dataset.path.glob(scores_fname), None)
         assert scores_path != None, scores_fname
 
+        ilp.console.log(f'loading BLP scores from {scores_fname}')
         with open(scores_path, "rb") as file:
             scores = pickle.load(file)
             scores_head = scores["head predictions"]
             scores_tail = scores["tail predictions"]
+
+        tracked = partial(track, console=ilp.console, disable=ilp.debug)
+
+        # sub-sampled blp graphs lose some vertices
+        # since they have fully inductive triples to predict
+        # ... we remove unknown vertices here
+        if 'subsample_kgc' in dataset.meta:
+            ilp.console.log('subsampled BLP dataset - removing unknown vertices')
+
+            new = {}
+            for task in tracked(dataset.open_kgc_val_heads):
+                cands = scores_head[task]
+                new[task] = [vid for vid in cands if vid in dataset.vertices]
+            scores_head = new
+
+            new = {}
+            for task in tracked(dataset.open_kgc_val_tails):
+                new[task] = [vid for vid in cands if vid in dataset.vertices]
+            scores_tail = new
 
         return scores_head, scores_tail
 
@@ -274,12 +283,12 @@ class Assembler:
             assert False, f"unknown dataset: {dataset_name}"
 
         if split_str == "validation":
-            assert set(scores_head) == set(dataset.open_kgc_val_heads)
-            assert set(scores_tail) == set(dataset.open_kgc_val_tails)
+            assert set(dataset.open_kgc_val_heads) <= set(scores_head)
+            assert set(dataset.open_kgc_val_tails) <= set(scores_tail)
 
         if split_str == "test":
-            assert set(scores_head) == set(dataset.open_kgc_test_heads)
-            assert set(scores_tail) == set(dataset.open_kgc_test_tails)
+            assert set(dataset.open_kgc_test_heads) <= set(scores_head)
+            assert set(dataset.open_kgc_test_tails) <= set(scores_tail)
 
         return scores_head, scores_tail
 
@@ -295,6 +304,7 @@ class Assembler:
             "ranker-results",
         ],
         split_str: str,
+        search_splits: tuple[Split, ...],
         template_path: str | Path,
         system_path: str | Path,
         question_path: str | Path,
@@ -345,6 +355,7 @@ class Assembler:
             dataset=dataset,
             mode=mode,
             split=split,
+            search_splits=search_splits,
             template=template,
             system=system,
             question=question,

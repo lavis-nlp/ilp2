@@ -488,8 +488,10 @@ class Runner:
             # dry run: oracle
             pr_mentions: list[str]
 
-            if self.dry_run:
+            if self.dry_run and self.config.mode == 'default':
                 pr_mentions = gt_mentions_transformed
+            if self.dry_run:
+                pr_mentions = list(map(str, range(10)))
             else:
                 pr_mentions = self._parse(ctx, output)
 
@@ -621,6 +623,7 @@ def run(
         dataset=dataset,
         mode=config.mode,
         split_str=config.dataset_split,
+        search_splits=search_splits,
         dataset_name=dataset.name,
         template_path=config.prompt_template,
         system_path=config.prompt_system,
