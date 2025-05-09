@@ -26,25 +26,21 @@ set root (dirname (status -f))
 
 . $root/config-model-llama.fish
 
-# mode: default
-. $root/config-mode-default.fish
-
 set debug -qd
-run_experiments $argv --dry-run
 
-# mode: prompt-reranking
-# . $root/config-mode-prompt-re-ranking.fish
-# set dataset_keys irt2/tiny irt2/small irt2/medium irt2/large
+# mode: default
+# . $root/config-mode-default.fish
 # run_experiments $argv
 
+# mode: prompt-reranking
+set dataset_keys irt2/tiny blp/wn18rr blp/fb15k237
+. $root/config-mode-prompt-re-ranking.fish
+run_experiments $argv $default_temperature $default_top_p
 
 # mode: full-reranking
 # . $root/config-mode-full-re-ranking.fish
-# set dataset_keys irt2/tiny irt2/small irt2/medium irt2/large
-# run_experiments $argv
+# run_experiments $argv $default_temperature $default_top_p
 
-
-# TODO add BLP
 
 # DEEPSEEK LLAMA
 
@@ -52,18 +48,15 @@ run_experiments $argv --dry-run
 
 # # mode: default
 # . $root/config-mode-default.fish
-# set dataset_keys irt2/tiny irt2/small irt2/medium irt2/large
 # run_experiments $argv $default_temperature $default_top_p
 
 # # mode: prompt-reranking
 # . $root/config-mode-prompt-reranking.fish
-# set dataset_keys irt2/tiny irt2/small irt2/medium irt2/large
 # run_experiments $argv $default_temperature $default_top_p
 
 
 # # mode: full-reranking
 # . $root/config-mode-full-reranking.fish
-# set dataset_keys irt2/tiny irt2/small irt2/medium irt2/large
 # run_experiments $argv $default_temperature $default_top_p
 
 
