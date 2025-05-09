@@ -109,7 +109,7 @@ class Assembler:
         return self.get_ranked_vids(*args, **kwargs)[:n]
 
     def _assemble_candidates(self, direction, mid, rid):
-        if self.mode == "default":
+        if self.mode == "default" and self.n_candidates > 0:
             # candidates = ", ".join(
             #     self.dataset.idmap.mid2str[mid]
             #     for mid_set in mid_sets
@@ -135,7 +135,7 @@ class Assembler:
 
             mids = list(midset)[: self.mentions_per_candidate]
             mentions = [self.dataset.idmap.mid2str[mid] for mid in mids]
-            buf.append(f"{i}: {name}, " + ",".join(mentions))
+            buf.append(f"{i}: {name}, " + ", ".join(mentions))
 
         return "\n".join(buf)
 
@@ -230,19 +230,41 @@ class Assembler:
         # sub-sampled blp graphs lose some vertices
         # since they have fully inductive triples to predict
         # ... we remove unknown vertices here
-        if "subsample_kgc" in dataset.meta:
-            ilp.console.log("subsampled BLP dataset - removing unknown vertices")
+        if "subsample_kgc" not in dataset.meta:
+            return scores_head, scores_tail
 
-            new = {}
-            for task in tracked(dataset.open_kgc_val_heads):
-                cands = scores_head[task]
-                new[task] = [vid for vid in cands if vid in dataset.vertices]
-            scores_head = new
+        # --
 
+        ilp.console.log("subsampled BLP dataset - removing unknown vertices")
+
+        def filter_preranked(tasks, scores):
             new = {}
-            for task in tracked(dataset.open_kgc_val_tails):
+            for task in tracked(tasks):
+                cands = scores[task]
                 new[task] = [vid for vid in cands if vid in dataset.vertices]
-            scores_tail = new
+            return new
+
+        task = dict(
+            validation=dict(
+                heads=dataset.open_kgc_val_heads,
+                tails=dataset.open_kgc_val_tails,
+            ),
+            test=dict(
+                heads=dataset.open_kgc_test_heads,
+                tails=dataset.open_kgc_test_tails,
+            )
+        )
+
+
+        scores_head = filter_preranked(
+            tasks=task[split_str]['heads'],
+            scores=scores_head,
+        )
+
+        scores_tail = filter_preranked(
+            tasks=task[split_str]['tails'],
+            scores=scores_tail,
+        )
 
         return scores_head, scores_tail
 
