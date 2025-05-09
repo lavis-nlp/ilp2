@@ -512,6 +512,7 @@ class Runner:
             k = 10
             topk = sorted(scored, key=lambda t: t[1], reverse=True)[:k]
             scored_fmt = [f"{score}:{self.ds.vertices[vid]}" for vid, score in topk]
+            topk_vids = {vid for vid, _ in topk}
 
             self._trace(
                 "-" * 80,
@@ -523,8 +524,8 @@ class Runner:
                 f"transformed true mentions: {', '.join(gt_mentions_transformed)}",
                 f"scored vertices (top-{k}): {', '.join(scored_fmt)}",
                 f"true vertices (top-{k}): {', '.join(self.ds.vertices[vid] for vid in gt_vids)}",
-                f"{len(gt_vids & set(topk))}/{len(gt_vids)} vids are correct",
-                f"{len(set(gt_vids) - set(gt_vids))} are incorrectly predicted vertices",
+                f"{len(gt_vids & topk_vids)}/{len(gt_vids)} vids are correct",
+                f"{len(set(topk_vids) - set(gt_vids))} are incorrectly predicted vertices",
                 "\n",
             )
 
