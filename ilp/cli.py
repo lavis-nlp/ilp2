@@ -12,7 +12,7 @@ import rich_click as click
 from ktz.collections import path
 
 import ilp
-from ilp.model import ModelBase, VLLMModel
+from ilp.model import VLLMModel
 from ilp.runner import Config, wrapped_run
 
 os.environ["PYTHONBREAKPOINT"] = "pudb.set_trace"
@@ -262,6 +262,8 @@ def run_experiment(
     # iterate all combinations of sweeping parameters
     # and create a config for each
 
+    breakpoint()
+
     datasets = dict(
         irt2.loader.from_config_file(
             path(dataset_config, is_file=True),
@@ -282,7 +284,7 @@ def run_experiment(
     defer_loading = (
         ilp.debug,
         dry_run,
-        mode == 'ranker-results',
+        mode == "ranker-results",
     )
 
     if not any(defer_loading):

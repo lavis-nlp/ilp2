@@ -1,8 +1,6 @@
 import pickle
-from ast import Tuple
 from dataclasses import dataclass
 from itertools import islice
-from operator import contains
 from pathlib import Path
 from typing import Literal
 
@@ -12,7 +10,6 @@ import yaml
 from irt2.dataset import IRT2
 from irt2.types import MID, RID, VID, Split
 from ktz.collections import path
-from torch import TupleType
 
 Tasks = dict[tuple[MID, RID], set[VID]]
 
@@ -164,13 +161,10 @@ class Assembler:
                     for mid in list(mid_set)[: self.mentions_per_candidate]
                 )
             else:
-                top_n_vids = self.get_top_n_vids(
-                    direction=direction, task=(mid, rid)
-                )
+                top_n_vids = self.get_top_n_vids(direction=direction, task=(mid, rid))
 
                 top_n_entity_names: list[str] = [
-                    self.dataset.idmap.vid2str[vid].split(":")[1]
-                    for vid in top_n_vids
+                    self.dataset.idmap.vid2str[vid].split(":")[1] for vid in top_n_vids
                 ]
 
                 candidates = "\n".join(
