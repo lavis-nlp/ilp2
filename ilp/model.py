@@ -4,12 +4,6 @@ from typing import Generator, Iterable, Literal
 
 import orjson
 import torch
-from transformers import (
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    PreTrainedTokenizer,
-    PreTrainedTokenizerFast,
-)
 from vllm import LLM
 from vllm.sampling_params import BeamSearchParams, SamplingParams
 
@@ -230,6 +224,7 @@ class VLLMModel(ModelBase):
         yield from self._prompt_post(gen)
 
 
+# currently unused
 # class HuggingFaceModel(ModelBase):
 
 #     model_kwargs = None

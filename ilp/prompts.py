@@ -109,13 +109,9 @@ class Assembler:
         return self.get_ranked_vids(*args, **kwargs)[:n]
 
     def _assemble_candidates(self, direction, mid, rid):
-        if self.mode == "default" and self.n_candidates > 0:
-            # candidates = ", ".join(
-            #     self.dataset.idmap.mid2str[mid]
-            #     for mid_set in mid_sets
-            #     for mid in list(mid_set)[: self.mentions_per_candidate]
-            # )
-            assert False, "deprecated?"
+        if self.mode == "default":
+            assert self.n_candidates == 0
+            return ""
 
         top_n_vids = self.get_top_n_vids(
             direction=direction,
@@ -252,17 +248,16 @@ class Assembler:
             test=dict(
                 heads=dataset.open_kgc_test_heads,
                 tails=dataset.open_kgc_test_tails,
-            )
+            ),
         )
 
-
         scores_head = filter_preranked(
-            tasks=task[split_str]['heads'],
+            tasks=task[split_str]["heads"],
             scores=scores_head,
         )
 
         scores_tail = filter_preranked(
-            tasks=task[split_str]['tails'],
+            tasks=task[split_str]["tails"],
             scores=scores_tail,
         )
 
