@@ -47,10 +47,10 @@ run_experiments $argv $default_temperature $default_top_p
 run_experiments $argv $default_temperature $default_top_p
 
 # mode: prompt-reranking
-. $root/config-mode-prompt-reranking.fish
+. $root/config-mode-prompt-re-ranking.fish
 run_experiments $argv $default_temperature $default_top_p
 
 
 # mode: full-reranking
-. $root/config-mode-full-reranking.fish
+. $root/config-mode-full-re-ranking.fish
 run_experiments $argv $default_temperature $default_top_p
