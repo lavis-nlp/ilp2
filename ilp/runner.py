@@ -397,8 +397,6 @@ class Runner:
         lis = list(prompts)
         ilp.console.log(f"querying model with {len(lis)} prompts...")
 
-        breakpoint()
-
         ts_start = datetime.now()
         res = list(self.model.prompt(self.config, lis))
         ts_end = datetime.now()
