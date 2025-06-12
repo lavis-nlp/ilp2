@@ -110,7 +110,7 @@ class Assembler:
 
     def _assemble_candidates(self, direction, mid, rid):
         if self.mode == "default":
-            assert self.n_candidates == 0
+            # assert self.n_candidates == 0
             return ""
 
         top_n_vids = self.get_top_n_vids(

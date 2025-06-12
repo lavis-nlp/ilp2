@@ -3,7 +3,8 @@
 # run all experiments with final parameter configuration as determined
 # by experiments detailed in the spreadsheet (see readme)
 
-set dataset_split validation
+#set debug -qd
+set dataset_split test
 
 # setup
 
