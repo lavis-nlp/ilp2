@@ -27,7 +27,7 @@ You can find the source code in `./ilp` and all configurations (including legacy
 
  Usage: ilp [OPTIONS] COMMAND [ARGS]...
 
- Use irt2m from the command line.
+ Use ilp from the command line.
 
 ╭─ Options ─────────────────────────────────────────────────────╮
 │ --quiet  -q    suppress console output                        │
