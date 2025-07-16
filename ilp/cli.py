@@ -41,7 +41,7 @@ pretty_errors.configure(
     help="activate debug mode (drop into pudb on error)",
 )
 def main(quiet: bool, debug: bool):
-    """Use irt2m from the command line."""
+    """Use ilp from the command line."""
     ilp.debug = debug
     ilp.console.quiet = quiet
 
