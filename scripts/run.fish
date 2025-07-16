@@ -2,7 +2,6 @@ function params -a name
     echo $name (string join -- " $name " $argv[2..]) | tr ' ' \n
 end
 
-
 function run_experiments
     poetry run ilp $debug run-experiment \
         --mode $mode \
