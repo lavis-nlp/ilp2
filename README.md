@@ -3,7 +3,7 @@
 Using chatbots to solve open world knowledge graph completion. This repository is used to document the state of the research code used for the publication of the paper [Re-ranking with LLMs for Open-World Knowledge Graph Completion](https://example.com).
 
 - [See detailed experiment results here](https://docs.google.com/spreadsheets/d/1794pSMUGz6si1_FswPXciauxJSQRjqkLJL4WH2JO_2s)
-- [Download the experiment logfiles here](https://example.com)
+- [Download the raw experiment results and model outputs here](https://lavis.cs.hs-rm.de/storage/ilp2/ilp2-experiment-results.tgz)
 
 
 ## Installation
@@ -36,7 +36,7 @@ You can find the source code in `./ilp` and all configurations (including legacy
 ╰───────────────────────────────────────────────────────────────╯
 ```
 
-To reproduce the experiments of the paper, see the `scripts/` directory. The [fish shell](https://fishshell.com/) is required to execute the scripts.  There, for the IRT2 and BLP datasets, experiments are started using `scripts/exp-irt-full.fish` and `scripts/exp-blp-full.fish`. However, these are only used to properly configure the `ilp` entry point shown above. For ease of access (if you cannot or don't want to use these entry points), the fully expanded calls to `ilp` are also documented in `scripts/all-experiments.sh`.
+To reproduce the experiments of the paper, see the `scripts/` directory. Calls to `ilp` to run the experiments which have been conducted for the final paper results are documented in `scripts/all-experiments.sh`. If you want to have the flexibility and automation we worked with during development, you can execute the `*.fish` files. The [fish shell](https://fishshell.com/) is required to execute these scripts.  There, for the IRT2 and BLP datasets, experiments are started using `scripts/exp-irt-full.fish` and `scripts/exp-blp-full.fish`. These entry points source the outher files in the directory to configure the experiment runs. However, these are only used to properly configure the `ilp` entry point shown above like documented in `scripts/all-experiments.sh`.
 
 
 ## Cite
